@@ -1,0 +1,9 @@
+- `[x]` Set up Conventional Commit Linting
+  - `[x]` Install Husky and Commitlint dependencies
+  - `[x]` Configure `commitlint.config.js`
+  - `[x]` Configure Husky pre-commit/commit-msg hooks
+- `[/]` Establish Backend Testing Framework
+  - `[ ]` Install Jest and Supertest
+  - `[ ]` Configure test script in `package.json`
+  - `[ ]` Write `server.test.js` to test the API health endpoint
+- `[ ]` Run tests and verify configuration
