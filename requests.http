@@ -1,0 +1,224 @@
+### Eventvista API — REST Client test suite
+### Install the "REST Client" (humao.rest-client) VS Code extension, then click
+### "Send Request" above any block below. Requests run top-to-bottom; later
+### requests reuse variables captured from earlier responses.
+
+@baseUrl = http://localhost:5000/api/v1
+
+### 1. Health check
+GET {{baseUrl}}/health
+
+
+### 2. Register a new user (organiser)
+# @name register
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+  "name": "Ada Lovelace",
+  "email": "ada@eventvista.test",
+  "password": "SuperSecure123",
+  "role": "organiser"
+}
+
+
+### 3. Log in and capture the JWT
+# @name login
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "ada@eventvista.test",
+  "password": "SuperSecure123"
+}
+
+### Capture the token from the login response for use below.
+@authToken = {{login.response.body.token}}
+
+
+### 4. Get the current authenticated user
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{authToken}}
+
+
+### 5. Create a vendor (e.g. a furniture supplier)
+# @name createVendor
+POST {{baseUrl}}/vendors
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "businessName": "Elegant Events Furniture Co.",
+  "category": "furniture",
+  "description": "Premium round banquet tables and gold Chiavari chairs.",
+  "priceRange": { "min": 50, "max": 400, "currency": "GBP" },
+  "default3DModelUrl": "https://assets.eventvista.test/models/round-table.glb"
+}
+
+### Capture the new vendor's id for use below.
+@vendorId = {{createVendor.response.body.data._id}}
+
+
+### 6. List vendors filtered by category
+GET {{baseUrl}}/vendors?category=furniture
+Authorization: Bearer {{authToken}}
+
+
+### 7. Create an event
+# @name createEvent
+POST {{baseUrl}}/events
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "title": "Ada's Summer Gala",
+  "eventType": "corporate",
+  "date": "2026-09-12T18:00:00.000Z",
+  "guestCount": 120,
+  "budget": { "total": 15000, "spent": 0 }
+}
+
+### Capture the new event's id for use below.
+@eventId = {{createEvent.response.body.data._id}}
+
+
+### 8. Fetch all of my events
+GET {{baseUrl}}/events
+Authorization: Bearer {{authToken}}
+
+
+### 9. Create the initial 3D layout for the event
+# @name createLayout
+POST {{baseUrl}}/layouts
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "eventId": "{{eventId}}",
+  "venueBoundary": [
+    { "x": 0, "z": 0 },
+    { "x": 20, "z": 0 },
+    { "x": 20, "z": 15 },
+    { "x": 0, "z": 15 }
+  ],
+  "floorAreaSqm": 300,
+  "objects": [
+    {
+      "objectId": "table-001",
+      "label": "Round Banquet Table",
+      "category": "table",
+      "modelUrl": "https://assets.eventvista.test/models/round-table.glb",
+      "position": { "x": 3, "y": 0, "z": 3 },
+      "collisionRadius": 1.2
+    },
+    {
+      "objectId": "stage-001",
+      "label": "Main Stage",
+      "category": "stage",
+      "modelUrl": "https://assets.eventvista.test/models/stage.glb",
+      "position": { "x": 15, "y": 0, "z": 10 },
+      "collisionRadius": 3
+    }
+  ]
+}
+
+### Capture the new layout's id for use below.
+@layoutId = {{createLayout.response.body.data._id}}
+
+
+### 10. Fetch the full layout to hydrate the R3F canvas
+GET {{baseUrl}}/layouts/{{eventId}}
+Authorization: Bearer {{authToken}}
+
+
+### 11a. Update the layout — VALID move (no overlap, should return 200)
+PUT {{baseUrl}}/layouts/{{layoutId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "expectedRevision": 0,
+  "objects": [
+    {
+      "objectId": "table-001",
+      "label": "Round Banquet Table",
+      "category": "table",
+      "modelUrl": "https://assets.eventvista.test/models/round-table.glb",
+      "position": { "x": 5, "y": 0, "z": 5 },
+      "collisionRadius": 1.2
+    },
+    {
+      "objectId": "stage-001",
+      "label": "Main Stage",
+      "category": "stage",
+      "modelUrl": "https://assets.eventvista.test/models/stage.glb",
+      "position": { "x": 15, "y": 0, "z": 10 },
+      "collisionRadius": 3
+    }
+  ]
+}
+
+
+### 11b. Update the layout — INVALID move (deliberately overlapping objects,
+### should return 422 with a "collisions" array in the response body)
+PUT {{baseUrl}}/layouts/{{layoutId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "expectedRevision": 1,
+  "objects": [
+    {
+      "objectId": "table-001",
+      "label": "Round Banquet Table",
+      "category": "table",
+      "position": { "x": 15, "y": 0, "z": 10 },
+      "collisionRadius": 1.2
+    },
+    {
+      "objectId": "stage-001",
+      "label": "Main Stage",
+      "category": "stage",
+      "position": { "x": 15, "y": 0, "z": 10 },
+      "collisionRadius": 3
+    }
+  ]
+}
+
+
+### 11c. Update the layout — STALE revision (should return 409 Conflict)
+PUT {{baseUrl}}/layouts/{{layoutId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "expectedRevision": 0,
+  "objects": []
+}
+
+
+### 12. Trigger the full AI pipeline (Groq boundary parse + TRELLIS generation)
+### Requires valid GROQ_API_KEY / HUGGINGFACE_API_KEY in .env, and a real
+### base64 image in place of the placeholder below.
+POST {{baseUrl}}/ai/generate-layout
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "eventId": "{{eventId}}",
+  "imageBase64": "REPLACE_WITH_BASE64_VENUE_PHOTO",
+  "itemRequests": [
+    { "objectId": "table-002", "description": "round banquet table for 10 guests" },
+    { "objectId": "chair-002", "description": "gold Chiavari chair" }
+  ]
+}
+
+
+### 13. Delete the layout
+DELETE {{baseUrl}}/layouts/{{layoutId}}
+Authorization: Bearer {{authToken}}
+
+
+### 14. Delete the event
+DELETE {{baseUrl}}/events/{{eventId}}
+Authorization: Bearer {{authToken}}
