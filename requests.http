@@ -55,6 +55,7 @@ Authorization: Bearer {{authToken}}
   "default3DModelUrl": "https://assets.eventvista.test/models/round-table.glb"
 }
 
+### Capture the new vendor's id for use below.
 @vendorId = {{createVendor.response.body.data._id}}
 
 
@@ -77,6 +78,7 @@ Authorization: Bearer {{authToken}}
   "budget": { "total": 15000, "spent": 0 }
 }
 
+### Capture the new event's id for use below.
 @eventId = {{createEvent.response.body.data._id}}
 
 
@@ -120,6 +122,7 @@ Authorization: Bearer {{authToken}}
   ]
 }
 
+### Capture the new layout's id for use below.
 @layoutId = {{createLayout.response.body.data._id}}
 
 
