@@ -1,0 +1,27 @@
+{
+  "name": "eventvista-project-development-",
+  "version": "1.0.0",
+  "description": "This is a project repository for Eventvista the group members to collaborate with the each other during development.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Warning: no test specified\" && exit 0",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eventvista/Eventvista-Project-Development-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Eventvista/Eventvista-Project-Development-/issues"
+  },
+  "homepage": "https://github.com/Eventvista/Eventvista-Project-Development-#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
+    "husky": "^9.1.7"
+  }
+}
