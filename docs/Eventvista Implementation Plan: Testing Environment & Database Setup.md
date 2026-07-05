@@ -96,7 +96,7 @@ We are now moving away from local, temporary databases and connecting to our sha
 * Check your emails. You should have received an invitation from me to join our MongoDB Atlas project. Click the link to accept it and create your login details.
 * Once logged into the Atlas website, find our shared "Cluster" and click the **Connect** button.
 * Choose **"Compass"** as your connection method.
-* Atlas will give you a **Connection String** that looks like this: `mongodb+srv://<username>:<password>@cluster0...` (Replace `<password>` with your actual Atlas password).
+* Atlas will give you a **Connection String** that looks like this: `mongodb+srv://<username>:<password>@cluster0...` (Replace `<password>` with an  password we are currently sharing and i willsend it to to thhe group ).
 * Open your installed MongoDB Compass app on your computer, paste that connection string into the main URL bar, and click **Connect**.
 
 ### 3. How to Use Compass
