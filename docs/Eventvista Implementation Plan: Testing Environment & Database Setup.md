@@ -2,7 +2,9 @@
 # Eventvista Implementation Plan: Testing Environment & Database Setup
 
 **To:** The Eventvista Development Team (John, Shekinah, Gideon)
+
 **From:** Lewis Kariuki, Project Manager
+
 **Subject:** Moving to our Electron Testing Environment and Setting up MongoDB
 
 Team, as we move into the heavier technical phases of the project (specifically the AI integrations and 3D Venue Designer), we need to ensure our testing environment is stable and our database is properly connected.
@@ -43,6 +45,7 @@ To save you from typing multiple terminal commands every time you want to test t
 
 1. Open Notepad.
 2. Paste the following code into the file:
+
 ```bat
 @echo off
 echo Starting Eventvista Backend...
@@ -61,6 +64,7 @@ start cmd /k "cd frontend && npm run test:desktop"
 
 1. Open your terminal and create a new file in the root folder: `touch run-eventvista.sh`
 2. Open the file in your code editor and paste this:
+
 ```bash
 #!/bin/bash
 echo "Starting Backend..."
