@@ -23,6 +23,18 @@ I have created a new branch called `feature/electron-testing-environment`. This 
 * **3D & VR Readiness:** Since Shekinah and John will be working heavily with Hugging Face TRELLIS for the 3D venue canvas, Electron gives us better access to hardware acceleration and prepares the system for eventual VR testing.
 * **Accurate API Testing:** It strictly enforces how our frontend talks to our backend over port 5000, mimicking how the live system will behave.
 
+#### The "Overview" Table
+| Desktop Client | Electron + electron-builder | eventvista-desktop/ | Native Window |
+
+#### The "Full Directory Tree" Section
+Eventvista-Project-Development-/
+│
+├── eventvista-desktop/          <- NEW: Standalone Electron Wrapper & Compiler
+│   ├── main.js                  <- Controls native OS window properties
+│   └── package.json             <- Build engine settings (electron-builder)
+│
+├── frontend/                    <- Next.js Web App
+
 ### How to get the new branch:
 
 Open your terminal inside the root `Eventvista-Project-Development-` folder and run:
@@ -51,8 +63,11 @@ To save you from typing multiple terminal commands every time you want to test t
 echo Starting Eventvista Backend...
 start cmd /k "cd backend && npm run dev"
 
-echo Starting Eventvista Frontend in Electron...
-start cmd /k "cd frontend && npm run test:desktop"
+echo Starting Eventvista Next.js Frontend...
+start cmd /k "cd frontend && npm run dev"
+
+echo Waiting for Frontend, then Launching Desktop App...
+start cmd /k "cd eventvista-desktop && npx wait-on http://localhost:3000 && npm start"
 
 ```
 
@@ -70,8 +85,12 @@ start cmd /k "cd frontend && npm run test:desktop"
 echo "Starting Backend..."
 cd backend && npm run dev &
 
-echo "Starting Frontend in Electron..."
-cd frontend && npm run test:desktop &
+echo "Starting Next.js Frontend..."
+cd frontend && npm run dev &
+
+echo "Launching Desktop App..."
+# Waits for the frontend to be ready before opening the desktop window
+cd eventvista-desktop && npx wait-on http://localhost:3000 && npm start &
 wait
 
 ```
@@ -79,6 +98,16 @@ wait
 
 3. Make the file clickable by running: `chmod +x run-eventvista.sh`
 4. **To use it:** Simply double-click the file, or run `./run-eventvista.sh` in your terminal.
+
+### The "NPM Scripts Summary" Section
+
+You will need to document the new build commands that the team will use to generate the `.exe` files. Add these rows to your Scripts Summary table:
+
+| Location | Command | Action |
+| --- | --- | --- |
+| `eventvista-desktop/` | `npm start` | Launches the Electron sandbox for local testing |
+| `eventvista-desktop/` | `npm run build:win` | Compiles the project into a Windows `.exe` application |
+| `eventvista-desktop/` | `npm run build:linux` | Compiles the project into a Linux `.AppImage` application |
 
 ---
 
@@ -125,4 +154,7 @@ Currently, the system uses hardcoded placeholder data (likely stored in `.json` 
 3. **Update the Backend (John's Task):** John, please update the backend routes and controllers so that instead of reading the local placeholder files, the system queries the MongoDB database using Mongoose.
 4. **Test the UI (Shekinah's Task):** Shekinah, once John pushes the updated backend code, run the system using the executable file we created in Part 2. Ensure the UI still populates the venues and events correctly now that they are being fetched from the cloud database.
 
+Summary for the Team
+
+By adapting this procedure for Eventvista, John and Shekinah won't just be testing in a desktop window; they will actually be able to compile a standalone Eventvista.exe file. This is highly beneficial for the VR and 3D Venue rendering requirements outlined in our SRS Document, as native desktop apps handle heavy 3D graphics much better than standard web browsers!
 Let me know if anyone runs into any permission errors or needs help with the setup!
