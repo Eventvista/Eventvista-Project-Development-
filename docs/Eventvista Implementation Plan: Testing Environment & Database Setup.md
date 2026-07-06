@@ -65,14 +65,49 @@ To save you from typing multiple terminal commands every time you want to test t
 
 ```bat
 @echo off
-echo Starting Eventvista Backend...
-start cmd /k "cd backend && npm run dev"
+title Eventvista Full-Stack Desktop Terminal Launcher
+cls
 
-echo Starting Eventvista Next.js Frontend...
-start cmd /k "cd frontend && npm run dev"
+echo ===================================================
+echo   1. RESETTING WINDOWS PORTS ^& KILLING GHOST PIDs  
+echo ===================================================
 
-echo Waiting for Frontend, then Launching Desktop App...
-start cmd /k "cd eventvista-desktop && npx wait-on http://localhost:3000 && npm start"
+echo Checking Port 3000 (Frontend Next.js)...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000 ^| findstr LISTENING') do (
+    echo Found ghost process PID %%a on Port 3000. Force-terminating...
+    taskkill /f /pid %%a 2>nul
+)
+
+echo Checking Port 5000 (Backend Express)...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING') do (
+    echo Found ghost process PID %%a on Port 5000. Force-terminating...
+    taskkill /f /pid %%a 2>nul
+)
+
+echo Ports checked and cleared successfully.
+echo.
+
+echo ===================================================
+echo   2. SPINNING UP EVENTVISTA FULL-STACK SYSTEM      
+echo ===================================================
+
+echo -^> Launching API Engine (Backend)...
+:: Opens the backend in its own independent command window
+start "Eventvista Backend Service" cmd /k "cd backend && npm run dev"
+
+echo -^> Launching Frontend Dev Server ^& Spawning Electron App...
+echo Please wait for Next.js to compile. Electron will open automatically...
+echo.
+
+:: Switches into the frontend folder and triggers your package.json concurrent workflow
+cd frontend && npm run test:desktop
+
+echo.
+echo ===================================================
+echo   3. COOLDOWN TERMINATION ENGINE                   
+echo ===================================================
+echo Main process exited. 
+pause
 
 ```
 
@@ -87,17 +122,56 @@ start cmd /k "cd eventvista-desktop && npx wait-on http://localhost:3000 && npm 
 
 ```bash
 #!/bin/bash
-echo "Starting Backend..."
-cd backend && npm run dev &
 
-echo "Starting Next.js Frontend..."
-cd frontend && npm run dev &
+# Terminate the script immediately if any individual command fails
+set -e
 
-echo "Launching Desktop App..."
-# Waits for the frontend to be ready before opening the desktop window
-cd eventvista-desktop && npx wait-on http://localhost:3000 && npm start &
-wait
+echo "==================================================="
+echo "  1. RESETTING NETWORK PORTS & KILLING GHOST PIDs  "
+echo "==================================================="
 
+# Automatically kill any hidden background processes holding port 3000 or 5000
+# This guarantees Next.js will never throw a port/collision crash.
+echo "Clearing Port 3000 (Frontend Next.js)..."
+fuser -k 3000/tcp 2>/dev/null || true
+
+echo "Clearing Port 5000 (Backend Express)..."
+fuser -k 5000/tcp 2>/dev/null || true
+
+echo "Ports cleared successfully."
+echo ""
+
+echo "==================================================="
+echo "  2. SPINNING UP EVENTVISTA FULL-STACK SYSTEM      "
+echo "==================================================="
+
+# Capture the absolute path of the project root
+ROOT_DIR=$(pwd)
+
+# Step A: Enter the backend folder, install missing modules, and start it in the background
+echo "-> Starting API Engine (Backend)..."
+cd "$ROOT_DIR/backend"
+npm install --silent
+npm run dev &
+BACKEND_PID=$! # Save the process ID of the backend to clean it up later
+
+# Step B: Enter the frontend folder and execute your combined test:desktop script
+echo "-> Running Frontend Dev Server & Spawning Electron App..."
+cd "$ROOT_DIR/frontend"
+npm install --silent
+
+# Run your package.json concurrent script natively
+npm run test:desktop
+
+echo "==================================================="
+echo "  3. SYSTEM TEARDOWN & CLEANUP                     "
+echo "==================================================="
+
+# Once you close the Electron application window, gracefully stop the background backend API
+echo "Closing desktop window. Safely shutting down backend process (PID: $BACKEND_PID)..."
+kill $BACKEND_PID 2>/dev/null || true
+
+echo "All systems stopped cleanly. Terminal ready."
 ```
 
 
