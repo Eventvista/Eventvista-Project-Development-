@@ -27,13 +27,18 @@ I have created a new branch called `feature/electron-testing-environment`. This 
 | Desktop Client | Electron + electron-builder | eventvista-desktop/ | Native Window |
 
 #### The "Full Directory Tree" Section
+
 Eventvista-Project-Development-/
 │
-├── eventvista-desktop/          <- NEW: Standalone Electron Wrapper & Compiler
-│   ├── main.js                  <- Controls native OS window properties
-│   └── package.json             <- Build engine settings (electron-builder)
+├── eventvista-desktop/          <- NEW: Standalone Electron Wrapper & 
+
+Compiler
+│  ├── main.js                  <- Controls native OS window properties
+│  └── package.json             <- Build engine settings (electron-builder)
 │
 ├── frontend/                    <- Next.js Web App
+
+
 
 ### How to get the new branch:
 
