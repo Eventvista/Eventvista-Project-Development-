@@ -1,3 +1,4 @@
+// frontend/components/molecules/DataTable.js
 export default function DataTable({ columns, rows, caption }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm">

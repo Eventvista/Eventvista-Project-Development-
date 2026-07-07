@@ -1,3 +1,4 @@
+// frontend/app/components/layout/Sidebar.js
 "use client";
 
 import Link from "next/link";

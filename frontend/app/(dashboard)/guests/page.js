@@ -1,3 +1,4 @@
+// frontend/app/(dashboard)/guests/page.js
 "use client";
 
 import { useState, useMemo } from "react";

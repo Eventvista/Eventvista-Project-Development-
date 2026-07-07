@@ -1,0 +1,2173 @@
+```
+// frontend/app/(dashboard)/budget/page.js
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+
+const SUMMARY = [
+  { label: "Total Budget", value: "ksh 2,000,000" },
+  { label: "Total Spent", value: "ksh 1,245,000" },
+  { label: "Balance", value: "ksh 755,000" },
+];
+
+const EXPENSES = [
+  { category: "Venue", budgeted: 600000, spent: 500000 },
+  { category: "Catering", budgeted: 500000, spent: 320000 },
+  { category: "Decoration", budgeted: 300000, spent: 200000 },
+  { category: "Entertainment", budgeted: 200000, spent: 125000 },
+  { category: "Miscellaneous", budgeted: 400000, spent: 100000 },
+];
+
+const fmt = (n) => `ksh ${n.toLocaleString()}`;
+
+export default function BudgetPage() {
+  const totalSpent = EXPENSES.reduce((sum, e) => sum + e.spent, 0);
+  const totalBudget = EXPENSES.reduce((sum, e) => sum + e.budgeted, 0);
+  const spentPct = Math.round((totalSpent / totalBudget) * 100);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-neutral-900">Budget Overview</h1>
+        <Button>+ Add Expenses</Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {SUMMARY.map((item) => (
+          <Card key={item.label}>
+            <p className="text-xs font-medium text-neutral-500">{item.label}</p>
+            <p className="mt-2 text-xl font-bold text-neutral-900">{item.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <h2 className="mb-4 text-base font-semibold text-neutral-900">Expense Breakdown</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-neutral-100 text-xs font-semibold uppercase text-neutral-500">
+                  <th scope="col" className="py-2">Category</th>
+                  <th scope="col" className="py-2">Budgeted</th>
+                  <th scope="col" className="py-2">Spent</th>
+                  <th scope="col" className="py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXPENSES.map((row) => (
+                  <tr key={row.category} className="border-b border-neutral-50 last:border-0">
+                    <td className="py-3 font-medium text-neutral-800">{row.category}</td>
+                    <td className="py-3 text-neutral-600">{fmt(row.budgeted)}</td>
+                    <td className="py-3 text-neutral-600">{fmt(row.spent)}</td>
+                    <td className="py-3 font-medium text-green-500">Good</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col items-center justify-center text-center">
+          <div
+            role="img"
+            aria-label={`${spentPct}% of budget spent`}
+            className="relative flex h-44 w-44 items-center justify-center rounded-full"
+            style={{
+              background: `conic-gradient(#5b39e0 ${spentPct}%, #1fae72 ${spentPct}% 90%, #eeedf2 90% 100%)`,
+            }}
+          >
+            <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-white">
+              <p className="text-xs text-neutral-500">Budget Spent</p>
+              <p className="text-base font-bold text-neutral-900">{fmt(totalSpent)}</p>
+            </div>
+          </div>
+          <div className="mt-4 flex gap-4 text-xs text-neutral-500">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-purple-600 inline-block" />Spent</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" />Balance</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-neutral-200 inline-block" />Total</span>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/calendar/page.js
+"use client";
+
+import { useState } from "react";
+
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const EVENTS = {
+  20: { name: "Dream Wedding", color: "text-purple-600" },
+  25: { name: "Birthday Party", color: "text-purple-600" },
+};
+
+export default function CalendarPage() {
+  const [currentMonth] = useState("July 2026");
+
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-neutral-900">Calendar</h1>
+
+      <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-neutral-900">Calendar</h2>
+          <div className="flex items-center gap-3">
+            <button className="rounded-lg border border-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-50">
+              Today
+            </button>
+            <button className="rounded-lg border border-neutral-200 px-2 py-1.5 text-neutral-600 hover:bg-neutral-50">
+              ‹
+            </button>
+            <span className="text-sm font-semibold text-neutral-800">{currentMonth}</span>
+            <button className="rounded-lg border border-neutral-200 px-2 py-1.5 text-neutral-600 hover:bg-neutral-50">
+              ›
+            </button>
+            <div className="flex overflow-hidden rounded-lg border border-neutral-200">
+              {["Month", "Week", "Day"].map((v) => (
+                <button
+                  key={v}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
+                    v === "Month"
+                      ? "bg-purple-600 text-white"
+                      : "text-neutral-600 hover:bg-neutral-50"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-neutral-100 bg-neutral-100">
+          {DAYS.map((day) => (
+            <div
+              key={day}
+              className="bg-neutral-50 py-2 text-center text-xs font-semibold uppercase text-neutral-500"
+            >
+              {day.slice(0, 3)}
+            </div>
+          ))}
+
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={`empty-${i}`} className="min-h-24 bg-white p-2" />
+          ))}
+
+          {days.map((day) => (
+            <div
+              key={day}
+              className="min-h-24 bg-white p-2 hover:bg-neutral-50 transition-colors duration-150"
+            >
+              <span
+                className={`text-sm font-medium ${
+                  day === 4
+                    ? "flex h-6 w-6 items-center justify-center rounded-full bg-purple-600 text-white"
+                    : "text-neutral-700"
+                }`}
+              >
+                {day}
+              </span>
+              {EVENTS[day] && (
+                <p className={`mt-1 truncate text-xs font-medium ${EVENTS[day].color}`}>
+                  {EVENTS[day].name}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/dashboard/page.js
+import Link from "next/link";
+import StatCard from "@/components/molecules/StatCard";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+
+const STATS = [
+  { label: "Total Events", value: "12", sublabel: "All time events" },
+  { label: "Upcoming Events", value: "5", sublabel: "Next 30 days" },
+  { label: "Total Budget", value: "ksh 4,578,000", sublabel: "All events" },
+  { label: "Total Guests", value: "1,248", sublabel: "Across all events" },
+];
+
+const UPCOMING = [
+  { 
+    id: 1, 
+    name: "Dream Wedding", 
+    date: "24 July", 
+    guests: 120, 
+    venue: "Nairobi, Kenya", 
+    status: "planning", 
+    img: "/images/dream wedding photo.jpeg" 
+  },
+  { 
+    id: 2, 
+    name: "Corporate Conference", 
+    date: "10 July", 
+    guests: 300, 
+    venue: "KICC Nairobi", 
+    status: "confirmed", 
+    img: "/images/corporate conferencee.jpeg" 
+  },
+  { 
+    id: 3, 
+    name: "Charity Gala Dinner", 
+    date: "1 August", 
+    guests: 200, 
+    venue: "Sarova Panafric", 
+    status: "planning", 
+    img: "/images/charity galaa photo.jpeg" 
+  },
+];
+
+const ACTIVITY = [
+  { id: 1, title: "Vendor Elegant Decor", detail: "Confirmed for Dream Wedding", time: "2m ago" },
+  { id: 2, title: "Payment of ksh 250,000", detail: "Received from Client", time: "1h ago" },
+  { id: 3, title: "Guest RSVP Update", detail: "35 guests confirmed", time: "3h ago" },
+  { id: 4, title: "New Task Assigned", detail: "Setup sound system", time: "5h ago" },
+];
+
+export default function DashboardPage() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900">Welcome back, John 👋</h1>
+          <p className="text-sm text-neutral-500">Here&apos;s what&apos;s happening with your events.</p>
+        </div>
+        <Button>+ Create New Event</Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {STATS.map((stat) => (
+          <StatCard key={stat.label} {...stat} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-neutral-900">Upcoming Events</h2>
+            <Link href="/events" className="text-xs font-semibold text-purple-600 hover:underline">
+              View all
+            </Link>
+          </div>
+          <ul className="divide-y divide-neutral-100">
+            {UPCOMING.map((event) => (
+              <li key={event.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="h-12 w-16 shrink-0 rounded-lg bg-neutral-200 overflow-hidden">
+  <img
+    src={event.img}
+    alt={event.name}
+    className="h-full w-full object-cover"
+  />
+</div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-neutral-800">{event.name}</p>
+                  <p className="truncate text-xs text-neutral-500">{event.date} · {event.guests} Guests</p>
+                  <p className="truncate text-xs text-neutral-400">{event.venue}</p>
+                </div>
+                <Badge status={event.status} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card className="flex flex-col lg:col-span-1">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-neutral-900">3D Venue Preview</h2>
+            <Link href="/designer" className="text-xs font-semibold text-purple-600 hover:underline">
+              View in 3D Designer
+            </Link>
+          </div>
+          <div className="flex-1 min-h-48 overflow-hidden rounded-xl bg-neutral-900">
+  <img
+    src="/images/3d venue stage photo.jpeg"
+    alt="3D venue preview"
+    className="h-full w-full object-cover opacity-80"
+  />
+</div>
+        </Card>
+
+        <Card className="lg:col-span-1">
+          <h2 className="mb-4 text-base font-semibold text-neutral-900">Recent Activity</h2>
+          <ul className="space-y-4">
+            {ACTIVITY.map((item) => (
+              <li key={item.id} className="flex items-start gap-3">
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-purple-500" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-neutral-800">{item.title}</p>
+                  <p className="text-xs text-neutral-500">{item.detail}</p>
+                  <p className="text-xs text-neutral-400">{item.time}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/events/page.js
+"use client";
+
+import { useState, useMemo } from "react";
+import DataTable from "@/components/molecules/DataTable";
+import SearchBar from "@/components/molecules/SearchBar";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+
+const EVENTS = [
+  { id: 1, name: "Dream Wedding", date: "24 July 2026", venue: "Nairobi, Kenya", guests: 120, status: "planning" },
+  { id: 2, name: "Corporate Conference", date: "10 July 2026", venue: "KICC, Nairobi", guests: 300, status: "confirmed" },
+  { id: 3, name: "Charity Gala Dinner", date: "1 August 2026", venue: "Sarova Panafric", guests: 200, status: "planning" },
+  { id: 4, name: "Product Launch", date: "17 August 2026", venue: "TRM, Nairobi", guests: 150, status: "confirmed" },
+  { id: 5, name: "Birthday Party", date: "30 August 2026", venue: "Karen Club", guests: 80, status: "planning" },
+];
+
+export default function EventsPage() {
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(
+    () => EVENTS.filter((e) => e.name.toLowerCase().includes(query.toLowerCase())),
+    [query]
+  );
+
+  const columns = [
+    {
+      key: "name", label: "Event Name",
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <img
+  src={
+  row.id === 1 ? "/images/dream wedding photo.jpeg" :
+  row.id === 2 ? "/images/corporate conferencee.jpeg" :
+  row.id === 3 ? "/images/charity galaa photo.jpeg" :
+  row.id === 4 ? "/images/product launch photo.jpeg" :
+  "/images/birthday party photo.jpeg"
+}
+  alt={row.name}
+  className="h-10 w-14 shrink-0 rounded-lg object-cover"
+/>
+          <span className="font-medium text-neutral-800">{row.name}</span>
+        </div>
+      ),
+    },
+    { key: "date", label: "Date" },
+    { key: "venue", label: "Venue" },
+    { key: "guests", label: "Guests" },
+    { key: "status", label: "Status", render: (row) => <Badge status={row.status} /> },
+    {
+      key: "action", label: "Action",
+      render: () => (
+        <button className="text-neutral-400 hover:text-neutral-700 text-lg font-bold">···</button>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-neutral-900">Events</h1>
+        <Button>+ New Event</Button>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <SearchBar id="events-search" value={query} onChange={setQuery} placeholder="Search Events" />
+      </div>
+      <DataTable columns={columns} rows={filtered} caption="List of events" />
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/guests/page.js
+"use client";
+
+import { useState, useMemo } from "react";
+import DataTable from "@/components/molecules/DataTable";
+import SearchBar from "@/components/molecules/SearchBar";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+
+const GUESTS = [
+  { id: 1, name: "Alice Johnson", email: "alice@gmail.com", phone: "0712242544", status: "confirmed" },
+  { id: 2, name: "Brian Smith", email: "brian@gmail.com", phone: "0700345675", status: "pending" },
+  { id: 3, name: "Catherine Lee", email: "catherine@gmail.com", phone: "0754757004", status: "confirmed" },
+  { id: 4, name: "David Brown", email: "david@gmail.com", phone: "0111223354", status: "declined" },
+  { id: 5, name: "Emma Wilson", email: "emma@gmail.com", phone: "0711767134", status: "pending" },
+];
+
+export default function GuestsPage() {
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(
+    () => GUESTS.filter((g) => g.name.toLowerCase().includes(query.toLowerCase())),
+    [query]
+  );
+
+  const columns = [
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "status", label: "RSVP Status", render: (row) => <Badge status={row.status} /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-neutral-900">Guests</h1>
+        <div className="flex gap-2">
+          <Button variant="secondary">Import</Button>
+          <Button>+ Add Guest</Button>
+        </div>
+      </div>
+      <SearchBar id="guests-search" value={query} onChange={setQuery} placeholder="Search Guests" />
+      <DataTable columns={columns} rows={filtered} caption="List of guests" />
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/messages/page.js
+"use client";
+
+import { useState } from "react";
+
+const THREADS = [
+  { id: 1, name: "Elegant Decor", preview: "Typing…", time: "10:30 am", color: "bg-purple-500" },
+  { id: 2, name: "Classic Catering", preview: "Here is the……", time: "9:45 am", color: "bg-green-500" },
+  { id: 3, name: "Client. Alice", preview: "Thank you", time: "Yesterday", color: "bg-pink-500" },
+  { id: 4, name: "Team Group", preview: "Meeting at 4pm", time: "2 days ago", color: "bg-cyan-500" },
+];
+
+const MESSAGES = {
+  1: [
+    { id: 1, from: "them", text: "Hi John, we have received your request" },
+    { id: 2, from: "me", text: "Great! Please share the virtual setup" },
+    {
+      id: 3,
+      from: "them",
+      text: "Here is the 3D setup for the stage",
+      image: "/images/3d venue stage photo.jpeg",
+    },
+  ],
+  2: [
+    { id: 1, from: "them", text: "Here is the catering menu for your review" },
+    { id: 2, from: "me", text: "Looks great, thank you!" },
+  ],
+  3: [
+    { id: 1, from: "them", text: "Thank you for choosing us!" },
+  ],
+  4: [
+    { id: 1, from: "them", text: "Team meeting at 4pm today" },
+    { id: 2, from: "me", text: "I will be there" },
+  ],
+};
+
+export default function MessagesPage() {
+  const [active, setActive] = useState(1);
+  const [draft, setDraft] = useState("");
+  const activeThread = THREADS.find((t) => t.id === active);
+  const activeMessages = MESSAGES[active] || [];
+
+  return (
+    <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+
+      {/* Left threads panel */}
+      <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-neutral-100 sm:block">
+        <h1 className="px-4 py-4 text-lg font-bold text-neutral-900">Messages</h1>
+        <ul>
+          {THREADS.map((thread) => (
+            <li key={thread.id}>
+              <button
+                onClick={() => setActive(thread.id)}
+                className={`flex w-full items-center gap-3 border-b border-neutral-50 px-4 py-3 text-left transition-colors duration-200 ${
+                  active === thread.id ? "bg-purple-50" : "hover:bg-neutral-50"
+                }`}
+              >
+                <span className={`h-9 w-9 shrink-0 rounded-full ${thread.color}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-neutral-800">
+                    {thread.name}
+                  </span>
+                  <span className="block truncate text-xs text-neutral-500">
+                    {thread.preview}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs text-neutral-400">
+                  {thread.time}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </aside>
+
+      {/* Right chat panel */}
+      <section className="flex flex-1 flex-col">
+        <header className="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <span className={`h-9 w-9 rounded-full ${activeThread.color}`} />
+            <div>
+              <p className="text-sm font-semibold text-neutral-800">
+                {activeThread.name}
+              </p>
+              <p className="text-xs text-green-500">Online</p>
+            </div>
+          </div>
+          <button className="text-neutral-400 hover:text-neutral-600">
+            •••
+          </button>
+        </header>
+
+        {/* Search bar */}
+        <div className="border-b border-neutral-100 px-5 py-2">
+          <input
+            type="search"
+            placeholder="Search messages.."
+            className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+          />
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 space-y-4 overflow-y-auto p-5">
+          {activeMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-sm rounded-2xl px-4 py-2.5 text-sm ${
+                  msg.from === "me"
+                    ? "rounded-tr-none bg-purple-100 text-purple-800"
+                    : "rounded-tl-none bg-neutral-100 text-neutral-700"
+                }`}
+              >
+                {msg.text}
+                {msg.image && (
+                  <div className="mt-2 overflow-hidden rounded-lg">
+                    <img
+                      src={msg.image}
+                      alt="3D venue setup"
+                      className="w-full max-w-xs rounded-lg object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Input */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setDraft("");
+          }}
+          className="flex items-center gap-3 border-t border-neutral-100 p-4"
+        >
+          <label htmlFor="message-input" className="sr-only">
+            Type a message
+          </label>
+          <input
+            id="message-input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Type a Message"
+            className="flex-1 rounded-lg border border-neutral-200 px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors duration-200"
+          >
+            Send
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/reports/page.js
+  import Card from "@/components/ui/Card";
+
+const STATS = [
+  { label: "Total Events", value: "8", trend: "+20%" },
+  { label: "Total Guests", value: "620", trend: "+13%" },
+  { label: "Revenue", value: "ksh 185,500", trend: "+28%" },
+];
+
+const CHART = [
+  { label: "1 June", value1: 620, value2: 880 },
+  { label: "14 June", value1: 580, value2: 650 },
+  { label: "18 June", value1: 700, value2: 300 },
+  { label: "24 June", value1: 480, value2: 790 },
+  { label: "30 June", value1: 400, value2: 880 },
+];
+
+export default function ReportsPage() {
+  const max = 1000;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-neutral-900">Reports</h1>
+        <select className="rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-100">
+          <option>This Month</option>
+          <option>Last Month</option>
+          <option>This Year</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {STATS.map((s) => (
+          <Card key={s.label}>
+            <p className="text-xs font-medium text-neutral-500">{s.label}</p>
+            <p className="mt-2 text-2xl font-bold text-neutral-900">{s.value}</p>
+            <p className="mt-1 text-xs font-semibold text-green-500">{s.trend}</p>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <h2 className="mb-6 text-base font-semibold text-neutral-900">
+          Event Summary
+        </h2>
+
+        <div className="flex h-64 items-end gap-6">
+          {CHART.map((bar) => (
+            <div key={bar.label} className="flex flex-1 flex-col items-center gap-2">
+              <div className="flex w-full items-end justify-center gap-1" style={{ height: "220px" }}>
+                <div
+                  className="w-5 rounded-t-md bg-purple-400 transition-all duration-500"
+                  style={{ height: `${(bar.value1 / max) * 100}%` }}
+                  title={`${bar.value1}`}
+                />
+                <div
+                  className="w-5 rounded-t-md bg-purple-600 transition-all duration-500"
+                  style={{ height: `${(bar.value2 / max) * 100}%` }}
+                  title={`${bar.value2}`}
+                />
+              </div>
+              <span className="text-xs text-neutral-400 text-center whitespace-nowrap">
+                {bar.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex items-center gap-4 text-xs text-neutral-500">
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-4 rounded bg-purple-400 inline-block" />
+            Guests
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-4 rounded bg-purple-600 inline-block" />
+            Revenue
+          </span>
+        </div>
+      </Card>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/settings/page.js
+"use client";
+
+import { useState } from "react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+
+export default function SettingsPage() {
+  const [profile, setProfile] = useState({
+    name: "John Simon",
+    email: "john@gmail.com",
+    phone: "0712242544",
+    role: "Client",
+  });
+
+  const [notifications, setNotifications] = useState({
+    emailAlerts: true,
+    smsAlerts: false,
+    guestUpdates: true,
+    vendorUpdates: true,
+    budgetAlerts: false,
+  });
+
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    await new Promise((r) => setTimeout(r, 800));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <h1 className="text-2xl font-bold text-neutral-900">Settings</h1>
+
+      {/* Profile Settings */}
+      <Card>
+        <h2 className="mb-4 text-base font-semibold text-neutral-900">
+          Profile Information
+        </h2>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-xl font-bold text-purple-700">
+              {profile.name.split(" ").map((n) => n[0]).join("")}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-neutral-800">{profile.name}</p>
+              <p className="text-xs text-neutral-500">{profile.role}</p>
+              <button className="mt-1 text-xs font-medium text-purple-600 hover:underline">
+                Change Photo
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={profile.email}
+                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">
+                Role
+              </label>
+              <select
+                value={profile.role}
+                onChange={(e) => setProfile({ ...profile, role: e.target.value })}
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              >
+                <option>Client</option>
+                <option>Event Planner</option>
+                <option>Vendor</option>
+                <option>Admin</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Notification Settings */}
+      <Card>
+        <h2 className="mb-4 text-base font-semibold text-neutral-900">
+          Notifications
+        </h2>
+        <div className="space-y-3">
+          {Object.entries(notifications).map(([key, value]) => (
+            <div key={key} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0">
+              <div>
+                <p className="text-sm font-medium text-neutral-800 capitalize">
+                  {key.replace(/([A-Z])/g, " $1")}
+                </p>
+              </div>
+              <button
+                onClick={() => setNotifications({ ...notifications, [key]: !value })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                  value ? "bg-purple-600" : "bg-neutral-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                    value ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Password Settings */}
+      <Card>
+        <h2 className="mb-4 text-base font-semibold text-neutral-900">
+          Change Password
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-600">
+              Current Password
+            </label>
+            <input
+              type="password"
+              placeholder="Enter current password"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-600">
+              New Password
+            </label>
+            <input
+              type="password"
+              placeholder="Enter new password"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-600">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            />
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={handleSave}>
+          {saved ? "Saved! ✓" : "Save Changes"}
+        </Button>
+        {saved && (
+          <p className="text-sm font-medium text-green-500">
+            Settings saved successfully!
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/vendors/page.js
+"use client";
+
+import { useState, useMemo } from "react";
+import DataTable from "@/components/molecules/DataTable";
+import SearchBar from "@/components/molecules/SearchBar";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+
+const VENDORS = [
+  { id: 1, name: "Elegant Decor", category: "Decor", contact: "0712242544", status: "confirmed", color: "bg-purple-500" },
+  { id: 2, name: "Classic Catering", category: "Catering", contact: "0700345675", status: "pending", color: "bg-green-500" },
+  { id: 3, name: "Perfect Sounds", category: "Sound", contact: "0754757004", status: "confirmed", color: "bg-sky-500" },
+  { id: 4, name: "Bright Lights", category: "Lighting", contact: "0111223354", status: "declined", color: "bg-neutral-900" },
+  { id: 5, name: "Royal Photography", category: "Photography", contact: "0711767134", status: "pending", color: "bg-lime-600" },
+];
+
+export default function VendorsPage() {
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(
+    () => VENDORS.filter((v) => v.name.toLowerCase().includes(query.toLowerCase())),
+    [query]
+  );
+
+  const columns = [
+    {
+      key: "name", label: "Vendor",
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <span className={`h-10 w-10 shrink-0 rounded-lg ${row.color}`} />
+          <span className="font-medium text-neutral-800">{row.name}</span>
+        </div>
+      ),
+    },
+    { key: "category", label: "Category" },
+    { key: "contact", label: "Contact" },
+    { key: "status", label: "Status", render: (row) => <Badge status={row.status} /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-neutral-900">Vendors</h1>
+        <Button>+ Add Vendor</Button>
+      </div>
+      <SearchBar id="vendors-search" value={query} onChange={setQuery} placeholder="Search vendors" />
+      <DataTable columns={columns} rows={filtered} caption="List of vendors" />
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/(dashboard)/layout.js
+import { SidebarProvider } from "@/context/SidebarContext";
+import Sidebar from "@/components/layout/Sidebar";
+import Navbar from "@/components/layout/Navbar";
+
+export default function DashboardLayout({ children }) {
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-neutral-50">
+        <Sidebar />
+        <div className="flex flex-1 flex-col lg:ml-64 transition-all duration-300">
+          <Navbar />
+          <main className="flex-1 p-4 sm:p-6">{children}</main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+```
+
+```
+// frontend/app/components/layout/Sidebar.js
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useSidebar } from "@/context/SidebarContext";
+
+const NAV_ITEMS = [
+  { label: "Dashboard", href: "/dashboard", icon: "grid" },
+  { label: "Events", href: "/events", icon: "calendar-event" },
+  { label: "3D Designer", href: "/designer", icon: "cube" },
+  { label: "Guests", href: "/guests", icon: "users" },
+  { label: "Vendors", href: "/vendors", icon: "briefcase" },
+  { label: "Budget", href: "/budget", icon: "wallet" },
+  { label: "Calendar", href: "/calendar", icon: "calendar" },
+  { label: "Messages", href: "/messages", icon: "chat" },
+  { label: "Reports", href: "/reports", icon: "chart" },
+  { label: "Settings", href: "/settings", icon: "cog" },
+];
+
+const ICONS = {
+  grid: (
+    <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
+  ),
+  "calendar-event": (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 9h18M8 3v4M16 3v4" strokeLinecap="round" />
+    </>
+  ),
+  cube: (
+    <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zM3 7l9 5 9-5M12 12v10" />
+  ),
+  users: (
+    <path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  ),
+  briefcase: (
+    <path d="M3 7h18v13H3zM8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+  ),
+  wallet: (
+    <path d="M3 6h15a3 3 0 013 3v9a3 3 0 01-3 3H6a3 3 0 01-3-3V6zM16 13h2" />
+  ),
+  calendar: (
+    <path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4" />
+  ),
+  chat: (
+    <path d="M21 11.5a8.38 8.38 0 01-9 8.5 8.5 8.5 0 01-4-1L3 21l1.5-4.5A8.38 8.38 0 013 11.5 8.5 8.5 0 0111.5 3 8.38 8.38 0 0121 11.5z" />
+  ),
+  chart: (
+    <path d="M3 3v18h18M9 17V9M14 17V5M19 17v-7" />
+  ),
+  cog: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </>
+  ),
+};
+
+function NavIcon({ name }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { collapsed, toggleCollapsed, mobileNavOpen, toggleMobileNav } =
+    useSidebar();
+
+  return (
+    <>
+      {mobileNavOpen && (
+        <button
+          aria-label="Close navigation overlay"
+          onClick={toggleMobileNav}
+          className="fixed inset-0 z-40 bg-neutral-900/40 lg:hidden"
+        />
+      )}
+
+      <nav
+        aria-label="Primary navigation"
+        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-neutral-900 text-neutral-200 transition-all duration-300
+          ${collapsed ? "w-20" : "w-64"}
+          ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"} 
+          lg:translate-x-0`}
+      >
+        <div className="flex h-16 items-center gap-3 px-5 border-b border-white/10">
+          <span
+            className="h-7 w-7 shrink-0 rounded-full bg-primary-500"
+            aria-hidden="true"
+          />
+          {!collapsed && (
+            <span className="text-lg font-semibold text-white">
+              Eventvista
+            </span>
+          )}
+        </div>
+
+        <ul className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname?.startsWith(item.href);
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200
+                    ${
+                      active
+                        ? "bg-primary-600 text-white"
+                        : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                    }`}
+                >
+                  <NavIcon name={item.icon} />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="border-t border-white/10 p-3">
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="hidden w-full h-9 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-200 hover:bg-neutral-800 hover:text-white lg:flex"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={`transition-transform duration-300 ${
+                collapsed ? "rotate-180" : ""
+              }`}
+              aria-hidden="true"
+            >
+              <path
+                d="M15 18l-6-6 6-6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </>
+  );
+}
+```
+
+```
+// frontend/app/designer/page.js
+"use client";
+
+import { useState } from "react";
+
+const ASSETS = {
+  tables: [
+    { id: "round-table", label: "Round Table", emoji: "🟤" },
+    { id: "rect-table", label: "Rectangular Table", emoji: "🟫" },
+    { id: "cocktail-table", label: "Cocktail Table", emoji: "🔘" },
+  ],
+  chairs: [
+    { id: "chiavari", label: "Chiavari Chair", emoji: "🪑" },
+    { id: "banquet", label: "Banquet Chair", emoji: "🪑" },
+  ],
+  stages: [
+    { id: "stage-small", label: "Small Stage", emoji: "🎤" },
+    { id: "stage-large", label: "Large Stage", emoji: "🎭" },
+  ],
+};
+
+export default function DesignerPage() {
+  const [activeTab, setActiveTab] = useState("tables");
+  const [rotation, setRotation] = useState(0);
+  const [placed, setPlaced] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleAdd = (asset) => {
+    const newAsset = {
+      ...asset,
+      instanceId: Date.now(),
+      x: Math.random() * 60 + 20,
+      y: Math.random() * 60 + 20,
+      rotation: 0,
+    };
+    setPlaced((prev) => [...prev, newAsset]);
+    setSelected(newAsset);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    await new Promise((r) => setTimeout(r, 1000));
+    setSaving(false);
+    alert("Layout saved successfully!");
+  };
+
+  return (
+    <div className="relative flex h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-900">
+
+      {/* Left Asset Panel */}
+      <aside className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-neutral-900 text-white">
+        <div className="border-b border-white/10 px-4 py-4">
+          <h2 className="text-sm font-semibold">Asset Library</h2>
+        </div>
+
+        <div className="flex gap-1 px-3 pt-3">
+          {Object.keys(ASSETS).map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveTab(cat)}
+              className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium capitalize transition-colors duration-200 ${
+                activeTab === cat
+                  ? "bg-purple-600 text-white"
+                  : "text-neutral-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid flex-1 grid-cols-2 gap-3 overflow-y-auto p-4">
+          {ASSETS[activeTab].map((asset) => (
+            <button
+              key={asset.id}
+              onClick={() => handleAdd(asset)}
+              className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-center transition-colors duration-200 hover:border-purple-400 hover:bg-white/10"
+            >
+              <span className="text-2xl">{asset.emoji}</span>
+              <span className="text-xs font-medium leading-tight text-white">
+                {asset.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* Canvas Area */}
+      <div className="relative flex-1 overflow-hidden bg-neutral-800">
+        <div className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+
+        {placed.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-4xl">🎪</p>
+              <p className="mt-2 text-sm text-neutral-400">
+                Click assets on the left to add them to your venue
+              </p>
+            </div>
+          </div>
+        )}
+
+        {placed.map((item) => (
+          <button
+            key={item.instanceId}
+            onClick={() => setSelected(item)}
+            className={`absolute flex flex-col items-center gap-1 rounded-lg border-2 bg-white/10 p-2 transition-all duration-200 hover:bg-white/20 ${
+              selected?.instanceId === item.instanceId
+                ? "border-purple-400"
+                : "border-white/20"
+            }`}
+            style={{
+              left: `${item.x}%`,
+              top: `${item.y}%`,
+              transform: `translate(-50%, -50%) rotate(${
+                selected?.instanceId === item.instanceId ? rotation : item.rotation
+              }deg)`,
+            }}
+          >
+            <span className="text-xl">{item.emoji}</span>
+            <span className="text-xs text-white">{item.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Right Inspector Panel */}
+      <aside className="flex w-56 shrink-0 flex-col border-l border-white/10 bg-neutral-900 text-white">
+        <div className="border-b border-white/10 px-4 py-4">
+          <h2 className="text-sm font-semibold">Inspector</h2>
+        </div>
+
+        <div className="flex-1 p-4">
+          {selected ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-neutral-400">Selected</p>
+                <p className="text-sm font-medium text-white">{selected.label}</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-300">
+                  Rotation ({rotation}°)
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  value={rotation}
+                  onChange={(e) => setRotation(Number(e.target.value))}
+                  className="w-full accent-purple-500"
+                />
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-medium text-neutral-300">Position</p>
+                <p className="text-xs text-neutral-400">
+                  X: {Math.round(selected.x)}% Y: {Math.round(selected.y)}%
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-400">
+              Click an asset on the canvas to inspect it.
+            </p>
+          )}
+        </div>
+
+        <div className="border-t border-white/10 p-4 space-y-2">
+          <button
+            onClick={() => setPlaced([])}
+            className="w-full rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-neutral-300 transition-colors duration-200 hover:bg-white/10"
+          >
+            Clear Canvas
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white transition-colors duration-200 hover:bg-purple-700 disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save Layout"}
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/login/page.js
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    window.location.href = "/dashboard";
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
+      <div className="flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-floating">
+
+        {/* Left side */}
+        <div className="hidden flex-1 flex-col justify-between bg-purple-50 p-10 lg:flex">
+          <div className="flex items-center gap-2">
+            <span className="h-6 w-6 rounded-full bg-purple-600" />
+            <span className="text-lg font-bold text-neutral-900">Eventvista</span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-neutral-900">
+              Plan. Manage.{" "}
+              <span className="text-purple-600">Celebrate.</span>
+            </h1>
+            <p className="mt-3 text-sm text-neutral-500">
+              Eventvista helps you organise events seamlessly and create
+              unforgettable experiences.
+            </p>
+          </div>
+         <div className="mt-8 flex-1 overflow-hidden rounded-2xl">
+  <img
+    src="/images/login photo.jpeg"
+    alt="Event planning"
+    className="w-full h-full object-contain"
+  />
+</div>
+        </div>
+
+        {/* Right side */}
+        <div className="flex flex-1 flex-col justify-center p-8 lg:p-12">
+          <div className="mx-auto w-full max-w-sm">
+            <h2 className="text-2xl font-bold text-neutral-900">Welcome Back!</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Sign in to continue to your account
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                    ✉
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Password
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                    🔒
+                  </span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-10 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  >
+                    {showPassword ? "🙈" : "👁"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-neutral-600">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    className="rounded border-neutral-300 accent-purple-600"
+                  />
+                  Remember Me
+                </label>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-purple-600 hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-purple-700"
+              >
+                LOGIN
+              </button>
+
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 border-t border-neutral-200" />
+                <span className="text-xs text-neutral-400">OR</span>
+                <div className="flex-1 border-t border-neutral-200" />
+              </div>
+
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 py-3 text-sm font-medium text-neutral-700 transition-colors duration-200 hover:bg-neutral-50"
+              >
+                <span className="text-lg">G</span>
+                Continue with Google
+              </button>
+
+              <p className="text-center text-sm text-neutral-500">
+                Don&apos;t have an account?{" "}
+                <Link href="/register" className="font-semibold text-purple-600 hover:underline">
+                  Sign Up
+                </Link>
+              </p>
+            </form>
+          </div>
+          {/*
+          <p className="mt-8 text-center text-xs text-neutral-400">
+            2024 Eventvista. All rights reserved.
+          </p>
+*/}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+```
+// frontend/app/register/page.js
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+export default function RegisterPage() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    role: "Client",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    window.location.href = "/dashboard";
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
+      <div className="flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-floating">
+
+        {/* Left side */}
+        <div className="hidden flex-1 flex-col justify-between bg-purple-50 p-10 lg:flex">
+          <div className="flex items-center gap-2">
+            <span className="h-6 w-6 rounded-full bg-purple-600" />
+            <span className="text-lg font-bold text-neutral-900">Eventvista</span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-neutral-900">
+              Let&apos;s Get{" "}
+              <span className="text-purple-600">Started!</span>
+            </h1>
+            <p className="mt-3 text-sm text-neutral-500">
+              Create an account and start planning amazing events with Eventvista
+            </p>
+          </div>
+          <div className="hidden lg:flex flex-1 flex-col bg-purple-50 p-10">
+  <div className="flex items-center gap-2">
+    <span className="h-6 w-6 rounded-full bg-purple-600" />
+    <span className="text-lg font-bold text-neutral-900">
+      Eventvista
+    </span>
+  </div>
+
+  <div className="mt-12">
+    <h1 className="text-3xl font-bold">
+      Let's Get <span className="text-purple-600">Started!</span>
+    </h1>
+
+    <p className="mt-3 text-neutral-500">
+      Create an account and start planning amazing events with Eventvista.
+    </p>
+  </div>
+
+  <div className="mt-8 flex-1 overflow-hidden rounded-xl">
+    <img
+      src="/images/registration photo.jpeg"
+      alt="Event celebration"
+      className="h-full w-full object-cover"
+    />
+  </div>
+</div>
+        </div>
+
+        {/* Right side */}
+        <div className="flex flex-1 flex-col justify-center p-8 lg:p-12">
+          <div className="mx-auto w-full max-w-sm">
+            <h2 className="text-2xl font-bold text-neutral-900">
+              Create Your Account
+            </h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Fill in the details below to get started
+            </p>
+
+            {error && (
+              <div className="mt-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">👤</span>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Enter your full name"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">✉</span>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="Enter your email"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">📞</span>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="Enter your phone number"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Password
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">🔒</span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="Create a password"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-10 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400"
+                  >
+                    {showPassword ? "🙈" : "👁"}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">🔒</span>
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    placeholder="Confirm your password"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Role
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">👤</span>
+                  <select
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  >
+                    <option>Client</option>
+                    <option>Event Planner</option>
+                    <option>Vendor</option>
+                    <option>Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-purple-700"
+              >
+                CREATE ACCOUNT
+              </button>
+
+              <p className="text-center text-sm text-neutral-500">
+                Already have an account?{" "}
+                <Link href="/login" className="font-semibold text-purple-600 hover:underline">
+                  Login
+                </Link>
+              </p>
+            </form>
+          </div>
+          {/*
+          <p className="mt-6 text-center text-xs text-neutral-400">
+            2024 Eventvista. All rights reserved.
+          </p>
+*/}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+```
+/* frontend/app/globals.css */
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #f1f0ff;
+  --color-primary-100: #e4e1fe;
+  --color-primary-200: #cbc5fd;
+  --color-primary-300: #aa9efa;
+  --color-primary-400: #8b75f6;
+  --color-primary-500: #6f51ef;
+  --color-primary-600: #5b39e0;
+  --color-primary-700: #4c2dc2;
+  --color-primary-800: #3f269c;
+  --color-primary-900: #35227c;
+
+  --color-secondary-50: #eefcf6;
+  --color-secondary-100: #d6f7e8;
+  --color-secondary-400: #34c98a;
+  --color-secondary-500: #1fae72;
+  --color-secondary-600: #178a5b;
+
+  --color-status-confirmed: #1fae72;
+  --color-status-confirmedBg: #e3f9ee;
+  --color-status-pending: #5b39e0;
+  --color-status-pendingBg: #ece7fd;
+  --color-status-planning: #5b39e0;
+  --color-status-planningBg: #ece7fd;
+  --color-status-declined: #e0395b;
+  --color-status-declinedBg: #fde7eb;
+
+  --color-neutral-25: #fdfdfe;
+  --color-neutral-50: #f6f6f8;
+  --color-neutral-100: #eeedf2;
+  --color-neutral-200: #dddce4;
+  --color-neutral-300: #bdbac8;
+  --color-neutral-400: #9c98ab;
+  --color-neutral-500: #7a768c;
+  --color-neutral-600: #5e5a70;
+  --color-neutral-700: #454258;
+  --color-neutral-800: #2c2a3a;
+  --color-neutral-900: #181722;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgba(24,23,34,0.04), 0 4px 16px rgba(24,23,34,0.06);
+  --shadow-floating: 0 8px 30px rgba(24,23,34,0.14);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+```
+// frontend/app/layout.tsx
+import "./globals.css";
+
+export const metadata = {
+  title: "Eventvista",
+  description: "Modern event management platform",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+```
+// frontend/app/page.tsx
+import { redirect } from "next/navigation";
+
+export default function Home() {
+  redirect("/login");
+}
+```
+
+```
+// frontend/components/layout/Navbar.js
+"use client";
+
+import { useState } from "react";
+import { useSidebar } from "@/context/SidebarContext";
+
+export default function Navbar({ user = { name: "John Simon", role: "Client" } }) {
+  const { toggleMobileNav } = useSidebar();
+  const [searchValue, setSearchValue] = useState("");
+
+  return (
+    <header
+      role="banner"
+      className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur-md sm:px-6"
+    >
+      <button
+        type="button"
+        onClick={toggleMobileNav}
+        aria-label="Open navigation menu"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 lg:hidden"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      <form role="search" className="hidden flex-1 max-w-md sm:block" onSubmit={(e) => e.preventDefault()}>
+        <label htmlFor="global-search" className="sr-only">Search</label>
+        <div className="relative">
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+            <path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <input
+            id="global-search"
+            type="search"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search…"
+            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 py-2 pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+      </form>
+
+      <div className="ml-auto flex items-center gap-3">
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+        </button>
+
+        <div className="flex items-center gap-2 border-l border-neutral-200 pl-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
+            {user.name.split(" ").map((n) => n[0]).join("")}
+          </span>
+          <div className="hidden text-left leading-tight md:block">
+            <p className="text-sm font-semibold text-neutral-800">{user.name}</p>
+            <p className="text-xs text-neutral-500">{user.role}</p>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+```
+// frontend/components/layout/Sidebar.js
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useSidebar } from "@/context/SidebarContext";
+
+const NAV_ITEMS = [
+  { label: "Dashboard", href: "/dashboard", icon: "grid" },
+  { label: "Events", href: "/events", icon: "calendar-event" },
+  { label: "3D Designer", href: "/designer", icon: "cube" },
+  { label: "Guests", href: "/guests", icon: "users" },
+  { label: "Vendors", href: "/vendors", icon: "briefcase" },
+  { label: "Budget", href: "/budget", icon: "wallet" },
+  { label: "Calendar", href: "/calendar", icon: "calendar" },
+  { label: "Messages", href: "/messages", icon: "chat" },
+  { label: "Reports", href: "/reports", icon: "chart" },
+  { label: "Settings", href: "/settings", icon: "cog" },
+];
+
+const ICONS = {
+  grid: (
+    <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
+  ),
+  "calendar-event": (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 9h18M8 3v4M16 3v4" strokeLinecap="round" />
+    </>
+  ),
+  cube: (
+    <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zM3 7l9 5 9-5M12 12v10" />
+  ),
+  users: (
+    <path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  ),
+  briefcase: (
+    <path d="M3 7h18v13H3zM8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+  ),
+  wallet: (
+    <path d="M3 6h15a3 3 0 013 3v9a3 3 0 01-3 3H6a3 3 0 01-3-3V6zM16 13h2" />
+  ),
+  calendar: (
+    <path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4" />
+  ),
+  chat: (
+    <path d="M21 11.5a8.38 8.38 0 01-9 8.5 8.5 8.5 0 01-4-1L3 21l1.5-4.5A8.38 8.38 0 013 11.5 8.5 8.5 0 0111.5 3 8.38 8.38 0 0121 11.5z" />
+  ),
+  chart: (
+    <path d="M3 3v18h18M9 17V9M14 17V5M19 17v-7" />
+  ),
+  cog: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </>
+  ),
+};
+
+function NavIcon({ name }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { collapsed, toggleCollapsed, mobileNavOpen, toggleMobileNav } =
+    useSidebar();
+
+  return (
+    <>
+      {mobileNavOpen && (
+        <button
+          aria-label="Close navigation overlay"
+          onClick={toggleMobileNav}
+          className="fixed inset-0 z-40 bg-neutral-900/40 lg:hidden"
+        />
+      )}
+
+      <nav
+        aria-label="Primary navigation"
+        className={`fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-neutral-900 text-neutral-200 transition-all duration-300
+          ${collapsed ? "w-20" : "w-64"}
+          ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"} 
+          lg:translate-x-0`}
+      >
+        <div className="flex h-16 items-center gap-3 px-5 border-b border-white/10">
+          <span
+            className="h-7 w-7 shrink-0 rounded-full bg-primary-500"
+            aria-hidden="true"
+          />
+          {!collapsed && (
+            <span className="text-lg font-semibold text-white">
+              Eventvista
+            </span>
+          )}
+        </div>
+
+        <ul className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname?.startsWith(item.href);
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200
+                    ${
+                      active
+                        ? "bg-primary-600 text-white"
+                        : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                    }`}
+                >
+                  <NavIcon name={item.icon} />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="border-t border-white/10 p-3">
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="hidden w-full h-9 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-200 hover:bg-neutral-800 hover:text-white lg:flex"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={`transition-transform duration-300 ${
+                collapsed ? "rotate-180" : ""
+              }`}
+              aria-hidden="true"
+            >
+              <path
+                d="M15 18l-6-6 6-6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </>
+  );
+}
+```
+
+```
+// frontend/components/molecules/DataTable.js
+export default function DataTable({ columns, rows, caption }) {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm">
+      <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+        {caption && <caption className="sr-only">{caption}</caption>}
+        <thead>
+          <tr className="border-b border-neutral-100">
+            {columns.map((col) => (
+              <th
+                key={col.key}
+                scope="col"
+                className="whitespace-nowrap px-5 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500"
+              >
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              key={row.id}
+              className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50 transition-colors duration-150"
+            >
+              {columns.map((col) => (
+                <td key={col.key} className="px-5 py-4 align-middle text-neutral-700">
+                  {col.render ? col.render(row) : row[col.key]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {rows.length === 0 && (
+        <p className="px-5 py-10 text-center text-sm text-neutral-400">No records found.</p>
+      )}
+    </div>
+  );
+}
+```
+
+```
+// frontend/components/molecules/SearchBar.js
+"use client";
+
+export default function SearchBar({ value, onChange, placeholder = "Search…", id }) {
+  return (
+    <div className="relative w-full sm:max-w-xs">
+      <label htmlFor={id} className="sr-only">{placeholder}</label>
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+        <path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+      <input
+        id={id}
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-neutral-200 bg-neutral-50 py-2.5 pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-purple-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-100"
+      />
+    </div>
+  );
+}
+```
+
+```
+// frontend/components/molecules/StatCard.js
+import Card from "@/components/ui/Card";
+
+export default function StatCard({ label, value, sublabel, trend }) {
+  return (
+    <Card>
+      <p className="text-xs font-medium text-neutral-500">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-neutral-900">{value}</p>
+      <div className="mt-1 flex items-center gap-2">
+        {sublabel && <p className="text-xs text-neutral-400">{sublabel}</p>}
+        {trend && <span className="text-xs font-semibold text-green-500">{trend}</span>}
+      </div>
+    </Card>
+  );
+}
+```
+
+```
+
+```

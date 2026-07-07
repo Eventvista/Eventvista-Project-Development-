@@ -1,4 +1,4 @@
-
+// frontend/app/(dashboard)/reports/page.js
   import Card from "@/components/ui/Card";
 
 const STATS = [

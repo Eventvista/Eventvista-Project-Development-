@@ -1,3 +1,4 @@
+// frontend/components/molecules/SearchBar.js
 "use client";
 
 export default function SearchBar({ value, onChange, placeholder = "Search…", id }) {

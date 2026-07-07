@@ -1,3 +1,4 @@
+// frontend/app/(dashboard)/events/page.js
 "use client";
 
 import { useState, useMemo } from "react";
