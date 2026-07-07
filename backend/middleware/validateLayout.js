@@ -1,3 +1,4 @@
+// backend/middleware/validateLayout.js
 import ApiError from '../utils/ApiError.js';
 
 const MAX_SCENE_BOUND = 500; // metres, sanity ceiling for venue coordinate space

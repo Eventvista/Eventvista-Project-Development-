@@ -1,3 +1,4 @@
+// backend/config/swagger.js
 import swaggerJSDoc from 'swagger-jsdoc';
 
 /**

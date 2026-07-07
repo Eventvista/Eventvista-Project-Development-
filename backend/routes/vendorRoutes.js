@@ -1,3 +1,4 @@
+// backend/routes/vendorRoutes.js
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
 import { createVendor, listVendors, getVendorById } from '../controllers/vendorController.js';

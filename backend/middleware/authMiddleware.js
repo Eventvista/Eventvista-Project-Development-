@@ -1,3 +1,4 @@
+// backend/middleware/authMiddleware.js
 import jwt from 'jsonwebtoken';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';

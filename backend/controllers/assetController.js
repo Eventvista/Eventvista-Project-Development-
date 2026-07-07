@@ -1,3 +1,4 @@
+// backend/controllers/assetController.js
 import { generate3DAssetFromImage } from '../services/huggingFaceService.js';
 
 /**

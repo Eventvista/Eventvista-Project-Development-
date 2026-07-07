@@ -1,3 +1,4 @@
+// backend/routes/assetRoutes.js
 import express from 'express';
 import multer from 'multer';
 import { create3DAsset } from '../controllers/assetController.js';

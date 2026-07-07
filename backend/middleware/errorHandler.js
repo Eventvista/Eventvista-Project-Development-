@@ -1,3 +1,4 @@
+// backend/middleware/errorHandler.js
 import ApiError from '../utils/ApiError.js';
 
 /**

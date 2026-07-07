@@ -1,3 +1,4 @@
+// backend/routes/layoutRoutes.js
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
 import validateLayout from '../middleware/validateLayout.js';
