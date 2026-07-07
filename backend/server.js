@@ -17,24 +17,18 @@ import vendorRoutes from './routes/vendorRoutes.js';
 import layoutRoutes from './routes/layoutRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 
-// Establish the database connection before the app starts accepting traffic.
-await connectDB();
-
 const app = express();
 
 /* ------------------------------------------------------------------ */
-/* Security middleware                                                */
+/* Security & Core Middleware                                         */
 /* ------------------------------------------------------------------ */
 
-// Sets a range of protective HTTP headers (CSP, X-Frame-Options, etc.).
 app.use(helmet());
 
-// Restricts cross-origin requests to the configured client origin only.
 const allowedOrigins = (process.env.CLIENT_ORIGIN || '').split(',').map((o) => o.trim());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser tools (curl, Postman) which send no Origin header.
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -46,7 +40,7 @@ app.use(
   })
 );
 
-// Global rate limit: 300 requests per 15 minutes per IP across the API surface.
+// Global API rate limit
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
@@ -56,8 +50,7 @@ const apiLimiter = rateLimit({
 });
 app.use('/api', apiLimiter);
 
-// A tighter limit specifically for the AI generation endpoint, since each
-// call is expensive (Groq + TRELLIS inference costs).
+// Target limit for computationally demanding AI infrastructure
 const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
@@ -67,11 +60,6 @@ const aiLimiter = rateLimit({
 });
 app.use('/api/v1/ai', aiLimiter);
 
-/* ------------------------------------------------------------------ */
-/* Body parsing and logging                                           */
-/* ------------------------------------------------------------------ */
-
-// Raised limit to accommodate base64-encoded venue photos sent to the AI pipeline.
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
@@ -80,11 +68,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 /* ------------------------------------------------------------------ */
-/* Health check                                                       */
-/* ------------------------------------------------------------------ */
-
-/* ------------------------------------------------------------------ */
-/* API documentation (Swagger UI)                                     */
+/* Documentation & Health                                             */
 /* ------------------------------------------------------------------ */
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -103,7 +87,7 @@ app.get('/api/v1/health', (req, res) => {
 });
 
 /* ------------------------------------------------------------------ */
-/* Route mounting                                                     */
+/* Route Mounting                                                     */
 /* ------------------------------------------------------------------ */
 
 app.use('/api/v1/users', userRoutes);
@@ -112,15 +96,11 @@ app.use('/api/v1/vendors', vendorRoutes);
 app.use('/api/v1/layouts', layoutRoutes);
 app.use('/api/v1/ai', aiRoutes);
 
-/* ------------------------------------------------------------------ */
-/* Error handling (must be registered last)                           */
-/* ------------------------------------------------------------------ */
-
 app.use(notFound);
 app.use(errorHandler);
 
 /* ------------------------------------------------------------------ */
-/* Process-level safety nets                                          */
+/* Process Safety & Execution Guards                                  */
 /* ------------------------------------------------------------------ */
 
 process.on('unhandledRejection', (reason) => {
@@ -128,14 +108,48 @@ process.on('unhandledRejection', (reason) => {
 });
 
 process.on('uncaughtException', (err) => {
+  // If it's a port collision issue, let the server's error event context handle it gracefully instead of abruptly exiting
+  if (err.code === 'EADDRINUSE') return; 
   console.error('[Uncaught Exception]', err);
   process.exit(1);
 });
 
-const PORT = process.env.PORT || 5000;
+/* ------------------------------------------------------------------ */
+/* Server Initialization Sequence                                      */
+/* ------------------------------------------------------------------ */
 
-app.listen(PORT, () => {
-  console.log(`[Eventvista API Gateway] Running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+const startAppServer = async () => {
+  try {
+    // Await connection cleanly within the startup chain
+    await connectDB();
+
+    let preferredPort = parseInt(process.env.PORT, 10) || 5000;
+    
+    const startListener = (port) => {
+      const server = app.listen(port, () => {
+        console.log(`[Eventvista API Gateway] Running in ${process.env.NODE_ENV || 'development'} mode on port ${port}`);
+      });
+
+      // Catch EADDRINUSE explicitly on the listener layer
+      server.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+          console.warn(`[Warning] Port ${port} is currently locked or in use. Trying port ${port + 1}...`);
+          startListener(port + 1);
+        } else {
+          console.error('[Server Error]', error);
+          process.exit(1);
+        }
+      });
+    };
+
+    startListener(preferredPort);
+
+  } catch (dbError) {
+    console.error('[Critical Error] System failed to connect to database:', dbError.message);
+    process.exit(1);
+  }
+};
+
+startAppServer();
 
 export default app;
