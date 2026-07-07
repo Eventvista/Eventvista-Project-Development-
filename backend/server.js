@@ -6,7 +6,9 @@ import cors from 'cors';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
+import swaggerUi from 'swagger-ui-express';
 import connectDB from './config/db.js';
+import swaggerSpec from './config/swagger.js';
 import errorHandler, { notFound } from './middleware/errorHandler.js';
 
 import userRoutes from './routes/userRoutes.js';
@@ -80,6 +82,16 @@ if (process.env.NODE_ENV === 'development') {
 /* ------------------------------------------------------------------ */
 /* Health check                                                       */
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* API documentation (Swagger UI)                                     */
+/* ------------------------------------------------------------------ */
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({
