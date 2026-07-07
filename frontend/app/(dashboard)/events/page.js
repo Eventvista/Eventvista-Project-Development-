@@ -1,52 +1,63 @@
 // frontend/app/(dashboard)/events/page.js
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DataTable from "@/components/molecules/DataTable";
 import SearchBar from "@/components/molecules/SearchBar";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
-const EVENTS = [
-  { id: 1, name: "Dream Wedding", date: "24 July 2026", venue: "Nairobi, Kenya", guests: 120, status: "planning" },
-  { id: 2, name: "Corporate Conference", date: "10 July 2026", venue: "KICC, Nairobi", guests: 300, status: "confirmed" },
-  { id: 3, name: "Charity Gala Dinner", date: "1 August 2026", venue: "Sarova Panafric", guests: 200, status: "planning" },
-  { id: 4, name: "Product Launch", date: "17 August 2026", venue: "TRM, Nairobi", guests: 150, status: "confirmed" },
-  { id: 5, name: "Birthday Party", date: "30 August 2026", venue: "Karen Club", guests: 80, status: "planning" },
-];
-
 export default function EventsPage() {
   const [query, setQuery] = useState("");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/v1/events", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setEvents(data.data);
+        } else {
+          setError(data.message || "Failed to fetch events");
+        }
+      } catch (err) {
+        setError("Network error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
 
   const filtered = useMemo(
-    () => EVENTS.filter((e) => e.name.toLowerCase().includes(query.toLowerCase())),
-    [query]
+    () => events.filter((e) => e.title && e.title.toLowerCase().includes(query.toLowerCase())),
+    [query, events]
   );
 
   const columns = [
     {
-      key: "name", label: "Event Name",
+      key: "title", label: "Event Name",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img
-  src={
-  row.id === 1 ? "/images/dream wedding photo.jpeg" :
-  row.id === 2 ? "/images/corporate conferencee.jpeg" :
-  row.id === 3 ? "/images/charity galaa photo.jpeg" :
-  row.id === 4 ? "/images/product launch photo.jpeg" :
-  "/images/birthday party photo.jpeg"
-}
-  alt={row.name}
-  className="h-10 w-14 shrink-0 rounded-lg object-cover"
-/>
-          <span className="font-medium text-neutral-800">{row.name}</span>
+          <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-600 font-bold">
+            {row.title.charAt(0)}
+          </div>
+          <span className="font-medium text-neutral-800">{row.title}</span>
         </div>
       ),
     },
-    { key: "date", label: "Date" },
-    { key: "venue", label: "Venue" },
-    { key: "guests", label: "Guests" },
-    { key: "status", label: "Status", render: (row) => <Badge status={row.status} /> },
+    { key: "date", label: "Date", render: (row) => new Date(row.date).toLocaleDateString() },
+    { key: "eventType", label: "Type", render: (row) => <span className="capitalize">{row.eventType}</span> },
+    { key: "guestCount", label: "Guests" },
+    { key: "status", label: "Status", render: (row) => <Badge status={row.layout ? "confirmed" : "planning"} /> },
     {
       key: "action", label: "Action",
       render: () => (
@@ -64,7 +75,14 @@ export default function EventsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchBar id="events-search" value={query} onChange={setQuery} placeholder="Search Events" />
       </div>
-      <DataTable columns={columns} rows={filtered} caption="List of events" />
+      
+      {error && <div className="text-red-500 text-sm">{error}</div>}
+      
+      {loading ? (
+        <div className="py-10 text-center text-neutral-500">Loading events...</div>
+      ) : (
+        <DataTable columns={columns} rows={filtered} caption="List of events" />
+      )}
     </div>
   );
 }
