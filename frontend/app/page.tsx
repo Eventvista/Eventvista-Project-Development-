@@ -73,7 +73,7 @@ export default function LandingPage() {
             </div>
             
             <p className="mt-8 text-center text-xs text-neutral-400">
-              © 2024 Eventvista. All rights reserved.
+              © 2026 Eventvista. All rights reserved.
             </p>
           </div>
         </div>
