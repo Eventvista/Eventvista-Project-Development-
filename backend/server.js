@@ -25,6 +25,7 @@ const app = express();
 
 app.use(helmet());
 
+// 1. Configure CORS to use the CLIENT_ORIGIN environment variable
 const allowedOrigins = (process.env.CLIENT_ORIGIN || '').split(',').map((o) => o.trim());
 app.use(
   cors({
@@ -90,6 +91,8 @@ app.get('/api/v1/health', (req, res) => {
 /* Route Mounting                                                     */
 /* ------------------------------------------------------------------ */
 
+const userRoutes = require('./routes/userRoutes'); // Adjust path if your routes file is named differently
+app.use('/api/v1/auth', userRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/vendors', vendorRoutes);
