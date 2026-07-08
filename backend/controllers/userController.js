@@ -1,3 +1,4 @@
+// backend/controllers/userController.js
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import ApiError from '../utils/ApiError.js';

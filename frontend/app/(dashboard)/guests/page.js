@@ -1,45 +1,114 @@
+// frontend/app/(dashboard)/guests/page.js
 "use client";
 
-import { useState, useMemo } from "react";
-import DataTable from "@/components/molecules/DataTable";
-import SearchBar from "@/components/molecules/SearchBar";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
+import { useState, useEffect } from 'react';
 
-const GUESTS = [
-  { id: 1, name: "Alice Johnson", email: "alice@gmail.com", phone: "0712242544", status: "confirmed" },
-  { id: 2, name: "Brian Smith", email: "brian@gmail.com", phone: "0700345675", status: "pending" },
-  { id: 3, name: "Catherine Lee", email: "catherine@gmail.com", phone: "0754757004", status: "confirmed" },
-  { id: 4, name: "David Brown", email: "david@gmail.com", phone: "0111223354", status: "declined" },
-  { id: 5, name: "Emma Wilson", email: "emma@gmail.com", phone: "0711767134", status: "pending" },
-];
+export default function GuestsPage({ params }) {
+  // 1. Establish state containers for your real database items
+  const [guests, setGuests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [newGuest, setNewGuest] = useState({ name: '', email: '', phone: '', status: 'pending' });
+  
+  const eventId = params.id || "YOUR_ACTIVE_EVENT_ID"; // Pull contextually from routing params or context
 
-export default function GuestsPage() {
-  const [query, setQuery] = useState("");
+  // 2. Fetch records from the database on component mount
+  useEffect(() => {
+    async function fetchGuests() {
+      try {
+        const response = await fetch(`/api/v1/events/${eventId}`);
+        const result = await response.json();
+        if (result.success) {
+          setGuests(result.data.guests || []);
+        }
+      } catch (error) {
+        console.error("Failed loading guests:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchGuests();
+  }, [eventId]);
 
-  const filtered = useMemo(
-    () => GUESTS.filter((g) => g.name.toLowerCase().includes(query.toLowerCase())),
-    [query]
-  );
+  // 3. Handle submission form interactions to write to MongoDB
+  const handleAddGuest = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/api/v1/events/${eventId}/guests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newGuest)
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setGuests(result.data); // Update table view automatically with fresh database list
+        setNewGuest({ name: '', email: '', phone: '', status: 'pending' }); // Reset form inputs
+      }
+    } catch (error) {
+      console.error("Could not save guest:", error);
+    }
+  };
 
-  const columns = [
-    { key: "name", label: "Name" },
-    { key: "email", label: "Email" },
-    { key: "phone", label: "Phone" },
-    { key: "status", label: "RSVP Status", render: (row) => <Badge status={row.status} /> },
-  ];
+  if (isLoading) return <p className="p-6">Loading guest management registry...</p>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-neutral-900">Guests</h1>
-        <div className="flex gap-2">
-          <Button variant="secondary">Import</Button>
-          <Button>+ Add Guest</Button>
-        </div>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Guest List Management</h1>
+
+      {/* Input Form connected directly to database writer action */}
+      <form onSubmit={handleAddGuest} className="flex gap-4 p-4 border rounded bg-white">
+        <input 
+          type="text" 
+          placeholder="Guest Name" 
+          value={newGuest.name}
+          onChange={(e) => setNewGuest({...newGuest, name: e.target.value})}
+          className="border p-2 rounded w-full"
+          required
+        />
+        <input 
+          type="email" 
+          placeholder="Email Address" 
+          value={newGuest.email}
+          onChange={(e) => setNewGuest({...newGuest, email: e.target.value})}
+          className="border p-2 rounded w-full"
+        />
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">
+          Add Guest
+        </button>
+      </form>
+
+      {/* Main Dynamic Table Display */}
+      <div className="bg-white rounded border overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-100 border-b">
+              <th className="p-3">Name</th>
+              <th className="p-3">Email</th>
+              <th className="p-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {guests.length === 0 ? (
+              <tr><td colSpan="3" className="p-3 text-gray-500 text-center">No guests found.</td></tr>
+            ) : (
+              guests.map((guest, index) => (
+                <tr key={guest._id || index} className="border-b hover:bg-gray-50">
+                  <td className="p-3 font-medium">{guest.name}</td>
+                  <td className="p-3 text-gray-600">{guest.email || 'N/A'}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-xs capitalize ${
+                      guest.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                      guest.status === 'declined' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {guest.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-      <SearchBar id="guests-search" value={query} onChange={setQuery} placeholder="Search Guests" />
-      <DataTable columns={columns} rows={filtered} caption="List of guests" />
     </div>
   );
 }

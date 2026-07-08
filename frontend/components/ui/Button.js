@@ -1,3 +1,4 @@
+// frontend/components/ui/Button.js
 const VARIANTS = {
   primary: "bg-purple-600 text-white hover:bg-purple-700",
   secondary: "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",

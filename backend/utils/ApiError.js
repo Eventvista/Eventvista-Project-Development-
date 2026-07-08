@@ -1,3 +1,4 @@
+// backend/utils/ApiError.js
 /**
  * A typed error carrying an HTTP status code, used so the centralised
  * error handler can distinguish operational errors (bad input, upstream

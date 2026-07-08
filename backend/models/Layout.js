@@ -1,3 +1,4 @@
+// backend/models/Layout.js
 import mongoose from 'mongoose';
 
 /**

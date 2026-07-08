@@ -1,3 +1,4 @@
+// backend/utils/asyncHandler.js
 /**
  * Wraps an async Express controller so any thrown/rejected error is passed
  * to next(), where the centralised errorHandler middleware can format it.

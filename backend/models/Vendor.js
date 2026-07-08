@@ -1,3 +1,4 @@
+// backend/models/Vendor.js
 import mongoose from 'mongoose';
 
 const vendorSchema = new mongoose.Schema(

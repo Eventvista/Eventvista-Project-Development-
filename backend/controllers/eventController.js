@@ -1,3 +1,4 @@
+// backend/controllers/eventController.js
 import mongoose from 'mongoose';
 import Event from '../models/Event.js';
 import ApiError from '../utils/ApiError.js';

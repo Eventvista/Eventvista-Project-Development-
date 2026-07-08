@@ -1,3 +1,4 @@
+// backend/controllers/layoutController.js
 import mongoose from 'mongoose';
 import Layout from '../models/Layout.js';
 import Event from '../models/Event.js';

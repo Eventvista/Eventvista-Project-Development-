@@ -1,3 +1,4 @@
+// frontend/components/ui/Badge.js
 const STATUS_STYLES = {
   confirmed: "bg-green-100 text-green-600",
   pending: "bg-purple-100 text-purple-600",

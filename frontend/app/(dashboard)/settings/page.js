@@ -1,3 +1,4 @@
+// frontend/app/(dashboard)/settings/page.js
 "use client";
 
 import { useState } from "react";

@@ -1,6 +1,8 @@
+// frontend/app/designer/page.js
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const ASSETS = {
   tables: [
@@ -45,11 +47,17 @@ export default function DesignerPage() {
   };
 
   return (
-    <div className="relative flex h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-900">
+    <div className="relative flex h-[calc(100vh)] overflow-hidden bg-neutral-900">
 
       {/* Left Asset Panel */}
       <aside className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-neutral-900 text-white">
-        <div className="border-b border-white/10 px-4 py-4">
+        <div className="border-b border-white/10 px-4 py-4 flex flex-col gap-4">
+          <Link 
+            href="/dashboard" 
+            className="inline-flex items-center text-xs font-medium text-neutral-400 hover:text-white transition-colors"
+          >
+            ← Return to Dashboard
+          </Link>
           <h2 className="text-sm font-semibold">Asset Library</h2>
         </div>
 
@@ -77,9 +85,7 @@ export default function DesignerPage() {
               className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-center transition-colors duration-200 hover:border-purple-400 hover:bg-white/10"
             >
               <span className="text-2xl">{asset.emoji}</span>
-              <span className="text-xs font-medium leading-tight text-white">
-                {asset.label}
-              </span>
+              <span className="text-xs font-medium leading-tight text-white">{asset.label}</span>
             </button>
           ))}
         </div>
@@ -98,9 +104,7 @@ export default function DesignerPage() {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <p className="text-4xl">🎪</p>
-              <p className="mt-2 text-sm text-neutral-400">
-                Click assets on the left to add them to your venue
-              </p>
+              <p className="mt-2 text-sm text-neutral-400">Click assets on the left to add them to your venue</p>
             </div>
           </div>
         )}
@@ -110,16 +114,12 @@ export default function DesignerPage() {
             key={item.instanceId}
             onClick={() => setSelected(item)}
             className={`absolute flex flex-col items-center gap-1 rounded-lg border-2 bg-white/10 p-2 transition-all duration-200 hover:bg-white/20 ${
-              selected?.instanceId === item.instanceId
-                ? "border-purple-400"
-                : "border-white/20"
+              selected?.instanceId === item.instanceId ? "border-purple-400" : "border-white/20"
             }`}
             style={{
               left: `${item.x}%`,
               top: `${item.y}%`,
-              transform: `translate(-50%, -50%) rotate(${
-                selected?.instanceId === item.instanceId ? rotation : item.rotation
-              }deg)`,
+              transform: `translate(-50%, -50%) rotate(${selected?.instanceId === item.instanceId ? rotation : item.rotation}deg)`,
             }}
           >
             <span className="text-xl">{item.emoji}</span>
@@ -142,9 +142,7 @@ export default function DesignerPage() {
                 <p className="text-sm font-medium text-white">{selected.label}</p>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-300">
-                  Rotation ({rotation}°)
-                </label>
+                <label className="mb-1 block text-xs font-medium text-neutral-300">Rotation ({rotation}°)</label>
                 <input
                   type="range"
                   min="0"
@@ -156,15 +154,11 @@ export default function DesignerPage() {
               </div>
               <div>
                 <p className="mb-1 text-xs font-medium text-neutral-300">Position</p>
-                <p className="text-xs text-neutral-400">
-                  X: {Math.round(selected.x)}% Y: {Math.round(selected.y)}%
-                </p>
+                <p className="text-xs text-neutral-400">X: {Math.round(selected.x)}% Y: {Math.round(selected.y)}%</p>
               </div>
             </div>
           ) : (
-            <p className="text-xs text-neutral-400">
-              Click an asset on the canvas to inspect it.
-            </p>
+            <p className="text-xs text-neutral-400">Click an asset on the canvas to inspect it.</p>
           )}
         </div>
 

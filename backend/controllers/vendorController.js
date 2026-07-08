@@ -1,3 +1,4 @@
+// backend/controllers/vendorController.js
 import mongoose from 'mongoose';
 import Vendor from '../models/Vendor.js';
 import ApiError from '../utils/ApiError.js';

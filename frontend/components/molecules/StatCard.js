@@ -1,3 +1,4 @@
+// frontend/components/molecules/StatCard.js
 import Card from "@/components/ui/Card";
 
 export default function StatCard({ label, value, sublabel, trend }) {

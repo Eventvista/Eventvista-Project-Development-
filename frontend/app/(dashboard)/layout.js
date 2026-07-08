@@ -1,3 +1,4 @@
+// frontend/app/(dashboard)/layout.js
 import { SidebarProvider } from "@/context/SidebarContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";

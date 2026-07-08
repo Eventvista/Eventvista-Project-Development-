@@ -1,3 +1,4 @@
+// frontend/app/(dashboard)/dashboard/page.js
 import Link from "next/link";
 import StatCard from "@/components/molecules/StatCard";
 import Card from "@/components/ui/Card";
