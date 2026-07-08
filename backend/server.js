@@ -91,7 +91,6 @@ app.get('/api/v1/health', (req, res) => {
 /* Route Mounting                                                     */
 /* ------------------------------------------------------------------ */
 
-const userRoutes = require('./routes/userRoutes'); // Adjust path if your routes file is named differently
 app.use('/api/v1/auth', userRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/events', eventRoutes);
