@@ -1,48 +1,49 @@
 // backend/controllers/eventController.js
+import mongoose from 'mongoose';
 import Event from '../models/Event.js';
+import ApiError from '../utils/ApiError.js';
+import asyncHandler from '../utils/asyncHandler.js';
 
-/**
- * @desc    Get complete Event details including subdocuments
- * @route   GET /api/v1/events/:id
- */
-export const getEventById = async (req, res) => {
-  try {
-    const event = await Event.findById(req.params.id)
-      .populate('bookedVendors.vendor') // Deep populates vendor profile details
-      .populate('organiser', 'name email');
+export const createEvent = asyncHandler(async (req, res) => {
+  const event = await Event.create({ ...req.body, organiser: req.user._id });
+  res.status(201).json({ success: true, data: event });
+});
 
-    if (!event) {
-      return res.status(404).json({ success: false, message: 'Event not found' });
-    }
+export const getMyEvents = asyncHandler(async (req, res) => {
+  const events = await Event.find({ organiser: req.user._id }).populate('layout');
+  res.status(200).json({ success: true, count: events.length, data: events });
+});
 
-    res.status(200).json({ success: true, data: event });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+export const getEventById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(400, 'Invalid event id.');
 
-/**
- * @desc    Push a new item dynamically to a specified event sub-array
- * @route   POST /api/v1/events/:id/:subresource (where subresource = guests, bookedVendors, or expenses)
- */
-export const addSubresourceItem = async (req, res) => {
-  const { id, subresource } = req.params;
-  const validResources = ['guests', 'bookedVendors', 'expenses'];
+  const event = await Event.findById(id).populate('layout').populate('bookedVendors.vendor');
+  if (!event) throw new ApiError(404, `No event found with id ${id}.`);
 
-  if (!validResources.includes(subresource)) {
-    return res.status(400).json({ success: false, message: 'Invalid subresource path' });
-  }
+  res.status(200).json({ success: true, data: event });
+});
 
-  try {
-    // Dynamically appends data payload to the targeted array list
-    const updatedEvent = await Event.findByIdAndUpdate(
-      id,
-      { $push: { [subresource]: req.body } },
-      { new: true, runValidators: true }
-    ).populate('bookedVendors.vendor');
+export const updateEvent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(400, 'Invalid event id.');
 
-    res.status(201).json({ success: true, data: updatedEvent[subresource] });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
-};
+  const event = await Event.findOneAndUpdate(
+    { _id: id, organiser: req.user._id },
+    { $set: req.body },
+    { new: true, runValidators: true }
+  );
+  if (!event) throw new ApiError(404, 'Event not found or you do not have permission to edit it.');
+
+  res.status(200).json({ success: true, data: event });
+});
+
+export const deleteEvent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(400, 'Invalid event id.');
+
+  const event = await Event.findOneAndDelete({ _id: id, organiser: req.user._id });
+  if (!event) throw new ApiError(404, 'Event not found or you do not have permission to delete it.');
+
+  res.status(200).json({ success: true, message: 'Event deleted successfully.' });
+});
