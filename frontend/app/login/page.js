@@ -2,15 +2,32 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { GoogleSignInButton, RoleSelectionModal } from "./GoogleAuthAndRoleSelect";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    window.location.href = "/dashboard";
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    // TODO (John): real signInWithPopup(auth, googleProvider) call goes here,
+    // then check Firestore — if user has no role yet, open the modal.
+    setGoogleLoading(false);
+    setShowRoleModal(true); // temporary, until John's real check replaces this
+  };
+
+  const handleRoleSelect = async (role) => {
+    // TODO (John): write `role` to this user's Firestore doc
+    setShowRoleModal(false);
     window.location.href = "/dashboard";
   };
 
@@ -128,13 +145,7 @@ export default function LoginPage() {
                 <div className="flex-1 border-t border-neutral-200" />
               </div>
 
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 py-3 text-sm font-medium text-neutral-700 transition-colors duration-200 hover:bg-neutral-50"
-              >
-                <span className="text-lg">G</span>
-                Continue with Google
-              </button>
+              <GoogleSignInButton onClick={handleGoogleSignIn} loading={googleLoading} />
 
               <p className="text-center text-sm text-neutral-500">
                 Don&apos;t have an account?{" "}
@@ -151,6 +162,8 @@ export default function LoginPage() {
 */}
         </div>
       </div>
+
+      <RoleSelectionModal open={showRoleModal} onSelect={handleRoleSelect} />
     </div>
   );
 }
