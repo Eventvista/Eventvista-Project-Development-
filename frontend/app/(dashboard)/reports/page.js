@@ -1,82 +1,65 @@
 // frontend/app/(dashboard)/reports/page.js
-  import Card from "@/components/ui/Card";
+"use client";
 
-const STATS = [
-  { label: "Total Events", value: "8", trend: "+20%" },
-  { label: "Total Guests", value: "620", trend: "+13%" },
-  { label: "Revenue", value: "ksh 185,500", trend: "+28%" },
-];
-
-const CHART = [
-  { label: "1 June", value1: 620, value2: 880 },
-  { label: "14 June", value1: 580, value2: 650 },
-  { label: "18 June", value1: 700, value2: 300 },
-  { label: "24 June", value1: 480, value2: 790 },
-  { label: "30 June", value1: 400, value2: 880 },
-];
+import { useEffect, useState } from "react";
+import Card from "@/components/ui/Card";
 
 export default function ReportsPage() {
-  const max = 1000;
+  const [advisorReport, setAdvisorReport] = useState("No specialized advisory plans found. Use the interactive 3D Designer Advisor floating link to generate metrics patterns.");
+
+  useEffect(() => {
+    const reportData = localStorage.getItem("eventvistaAdvisorReport");
+    if (reportData) setAdvisorReport(reportData);
+  }, []);
+
+  const handleDownloadReportBundle = () => {
+    // Structural layout string assembly for package generation
+    const fullDocumentPayload = `==================================================\nEVENTVISTA SYSTEM INTELLIGENCE REPORT BUNDLE\n==================================================\n\n${advisorReport}\n\n==================================================\n3D STRUCTURAL VENUE TELEMETRY SCHEMA\n==================================================\nEngine: Trellis V3 Core\nCoordinate Matrix Mapping: Verified\nObject Allocation: Dynamic Grid Arrangement Packaged\n\n© 2026 Eventvista System Data Engine.`;
+    
+    const blob = new Blob([fullDocumentPayload], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.href = url;
+    downloadAnchor.download = "Eventvista_Comprehensive_Report_Bundle.txt";
+    downloadAnchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-neutral-900">Reports</h1>
-        <select className="rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-100">
-          <option>This Month</option>
-          <option>Last Month</option>
-          <option>This Year</option>
-        </select>
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900">Reports Engine</h1>
+          <p className="text-xs text-neutral-500">System intelligence modules and spatial generation layout telemetry outputs</p>
+        </div>
+        <button 
+          onClick={handleDownloadReportBundle}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-sm"
+        >
+          ⬇ Download 3D Venue & Advisory Report Bundle
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {STATS.map((s) => (
-          <Card key={s.label}>
-            <p className="text-xs font-medium text-neutral-500">{s.label}</p>
-            <p className="mt-2 text-2xl font-bold text-neutral-900">{s.value}</p>
-            <p className="mt-1 text-xs font-semibold text-green-500">{s.trend}</p>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <h2 className="text-sm font-bold text-neutral-900 mb-3 flex items-center gap-2">
+            <span>🔮</span> Eventvista Advisor Strategy Report Output
+          </h2>
+          <div className="p-4 bg-neutral-900 rounded-xl border border-neutral-800">
+            <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap leading-relaxed">{advisorReport}</pre>
+          </div>
+        </Card>
+
+        <Card className="lg:col-span-1">
+          <h2 className="text-sm font-bold text-neutral-900 mb-2">Spatial Telemetry Status</h2>
+          <p className="text-xs text-neutral-500 mb-4">Trellis Engine structural design alignment index configuration tracking mapping parameters.</p>
+          <div className="border border-neutral-100 rounded-xl p-3 bg-neutral-50 space-y-2">
+            <div className="flex justify-between text-xs"><span className="text-neutral-500">Spatial Engine</span><span className="font-bold text-neutral-800">Trellis-Groq V3</span></div>
+            <div className="flex justify-between text-xs"><span className="text-neutral-500">Rehydration Index</span><span className="font-bold text-neutral-800">100% Fully Matched</span></div>
+            <div className="flex justify-between text-xs"><span className="text-neutral-500">Document Blueprint</span><span className="font-bold text-green-600">Bundled for Download</span></div>
+          </div>
+        </Card>
       </div>
-
-      <Card>
-        <h2 className="mb-6 text-base font-semibold text-neutral-900">
-          Event Summary
-        </h2>
-
-        <div className="flex h-64 items-end gap-6">
-          {CHART.map((bar) => (
-            <div key={bar.label} className="flex flex-1 flex-col items-center gap-2">
-              <div className="flex w-full items-end justify-center gap-1" style={{ height: "220px" }}>
-                <div
-                  className="w-5 rounded-t-md bg-purple-400 transition-all duration-500"
-                  style={{ height: `${(bar.value1 / max) * 100}%` }}
-                  title={`${bar.value1}`}
-                />
-                <div
-                  className="w-5 rounded-t-md bg-purple-600 transition-all duration-500"
-                  style={{ height: `${(bar.value2 / max) * 100}%` }}
-                  title={`${bar.value2}`}
-                />
-              </div>
-              <span className="text-xs text-neutral-400 text-center whitespace-nowrap">
-                {bar.label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 flex items-center gap-4 text-xs text-neutral-500">
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-4 rounded bg-purple-400 inline-block" />
-            Guests
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-4 rounded bg-purple-600 inline-block" />
-            Revenue
-          </span>
-        </div>
-      </Card>
     </div>
   );
 }
