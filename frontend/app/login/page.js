@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { GoogleSignInButton, RoleSelectionModal } from "./GoogleAuthAndRoleSelect";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,6 +12,8 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,6 +40,20 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    // TODO (John): real signInWithPopup(auth, googleProvider) call goes here,
+    // then check Firestore — if user has no role yet, open the modal.
+    setGoogleLoading(false);
+    setShowRoleModal(true); // temporary, until John's real check replaces this
+  };
+
+  const handleRoleSelect = async (role) => {
+    // TODO (John): write `role` to this user's Firestore doc
+    setShowRoleModal(false);
+    window.location.href = "/dashboard";
   };
 
   return (
@@ -138,6 +155,7 @@ export default function LoginPage() {
                 <span className="text-lg">G</span>
                 Continue with Google
               </button>
+              <GoogleSignInButton onClick={handleGoogleSignIn} loading={googleLoading} />
 
               <p className="text-center text-sm text-neutral-500">
                 Don&apos;t have an account?{" "}
@@ -147,6 +165,8 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <RoleSelectionModal open={showRoleModal} onSelect={handleRoleSelect} />
     </div>
   );
 }
