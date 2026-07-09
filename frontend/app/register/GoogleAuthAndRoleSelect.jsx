@@ -1,3 +1,4 @@
+// frontend/app/register/GoogleAuthAndRoleSelect.jsx
 import React, { useState } from "react";
 
 /**
