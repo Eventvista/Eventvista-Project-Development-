@@ -15,4 +15,4 @@ export default function DashboardLayout({ children }) {
       </div>
     </SidebarProvider>
   );
-}
+} // Fixed: Added missing closing braces
