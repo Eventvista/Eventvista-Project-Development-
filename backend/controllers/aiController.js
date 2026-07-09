@@ -4,6 +4,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { runFullAIPipeline } from '../utils/aiPipeline.js';
 import Layout from '../models/Layout.js';
 import Event from '../models/Event.js';
+import axios from 'axios';
 
 /**
  * @route   POST /api/v1/ai/generate-layout
@@ -97,4 +98,62 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
       furnitureMap: layout.furnitureMap
     }
   });
+});
+
+/**
+ * @route   POST /api/v1/ai/onboarding-suggestions
+ * @desc    Replaces hardcoded strings with structured data extracted from 
+ * conversational prompts using Groq context synthesis.
+ * @access  Private
+ */
+export const generateOnboardingSuggestions = asyncHandler(async (req, res) => {
+  const { description } = req.body;
+  if (!description) {
+    throw new ApiError(400, 'Free-form description text context is required.');
+  }
+
+  const systemPrompt = `
+You are the Eventvista AI Advisor. Parse the user's event description and return a strict JSON payload. Do not include introductory text or markdown ticks.
+Return precisely this format:
+{
+  "title": "Suggested Name String",
+  "eventType": "wedding" | "corporate" | "birthday" | "conference" | "exhibition" | "other",
+  "guestCount": Number,
+  "budgetTotal": Number,
+  "suggestedVendors": ["catering", "decor", "audioVisual", "furniture"],
+  "rationales": {
+    "guestCount": "Brief rationale text",
+    "budget": "Brief rationale text"
+  }
+}
+`.trim();
+
+  try {
+    const response = await axios.post(
+      process.env.GROQ_API_URL || 'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: description }
+        ]
+      },
+      { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` }, timeout: 20000 }
+    );
+
+    const content = response.data?.choices?.[0]?.message?.content;
+    if (!content) throw new ApiError(502, "Upstream text synthesis failure.");
+
+    const suggestions = JSON.parse(content);
+    
+    // Server safety validation corrections
+    suggestions.guestCount = Math.max(1, Number(suggestions.guestCount) || 50);
+    suggestions.budgetTotal = Math.max(0, Number(suggestions.budgetTotal) || 5000);
+
+    res.status(200).json({ success: true, data: suggestions });
+  } catch (error) {
+    throw new ApiError(502, `AI Interpretation engine failure: ${error.message}`);
+  }
 });
