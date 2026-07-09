@@ -36,42 +36,27 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
   // 3. AI Pipeline Execution
   const pipelineResult = await runFullAIPipeline(imageBase64, itemRequests);
 
-  // 4. Dynamic Layout Synthesis (Simulating Trellis Architecture Processing Pipeline)
-  const furnitureMap = [];
-  const baseInstanceId = Math.floor(1000 + Math.random() * 9000); // Ensures unique canvas key generation
-
-  // Mapping configurations dynamically relative to requested inventory items
-  itemRequests.forEach((reqItem, requestIndex) => {
-    const quantity = reqItem.quantity || 1;
-    const itemType = reqItem.itemType || 'Object';
+  // 4. Dynamic Layout Synthesis mapping from true Trellis pipeline results
+  const furnitureMap = (pipelineResult.objects || []).map((modelAsset, index) => {
+    // Compute spatial distributions cleanly based on layout geometry
+    const x = 15 + (index * 4);
+    const z = 30 + (index * 2);
     
-    // Assigning fallback emoji metadata based on request types
-    let emoji = '📦'; 
-    if (itemType.toLowerCase().includes('stage')) emoji = '🎭';
-    if (itemType.toLowerCase().includes('table')) emoji = '🟤';
-    if (itemType.toLowerCase().includes('chair')) emoji = '🪑';
-
-    for (let i = 0; i < quantity; i++) {
-      const instanceId = baseInstanceId + (requestIndex * 100) + i;
-      
-      // Compute standard spatial distribution coordinates across the canvas boundaries
-      const x = Math.min(90, Math.max(10, 15 + (i * 20) + (requestIndex * 10)));
-      const y = Math.min(90, Math.max(10, 30 + (requestIndex * 15)));
-      const rotation = (i * 45) % 360;
-
-      furnitureMap.push({
-        instanceId,
-        label: `Trellis Parsed ${itemType} ${i + 1}`,
-        emoji,
-        x,
-        y,
-        rotation
-      });
-    }
+    return {
+      objectId: modelAsset.objectId || `uuid-${Math.random().toString(36).substr(2, 9)}`,
+      label: modelAsset.description || `AI Item ${index + 1}`,
+      category: modelAsset.description?.toLowerCase().includes('chair') ? 'chair' : 'other',
+      modelUrl: modelAsset.modelUrl, // Dynamic asset URL generated from Trellis
+      position: { x, y: 0, z },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1, y: 1, z: 1 },
+      collisionRadius: 0.6,
+      locked: false
+    };
   });
 
   // 5. Database Serialization
-  const sourceImageUrlSnippet = `data:image/jpeg;base64,${imageBase64.slice(0, 32)}...`;
+  const sourceImageUrlSnippet = `data:image/jpeg;base64,${imageBase64.slice(0, 50)}...`;
   
   const layout = await Layout.findOneAndUpdate(
     { event: eventId },
@@ -80,7 +65,7 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
         venueBoundary: pipelineResult?.boundary || [],
         floorAreaSqm: pipelineResult?.floorAreaSqm || 0,
         sourceImageUrl: sourceImageUrlSnippet,
-        furnitureMap: furnitureMap // Storing the generated map into the layout
+        objects: furnitureMap // Storing structured 3D assets matching model definitions
       }
     },
     { new: true, upsert: true }
@@ -95,7 +80,7 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
       layoutId: layout._id,
       venueBoundary: layout.venueBoundary,
       floorAreaSqm: layout.floorAreaSqm,
-      furnitureMap: layout.furnitureMap
+      objects: layout.objects
     }
   });
 });
