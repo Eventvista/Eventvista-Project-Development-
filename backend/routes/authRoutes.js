@@ -1,8 +1,14 @@
 // backend/routes/authRoutes.js
 import express from 'express';
+import { registerUser } from '../controllers/authController.js';
+
 const router = express.Router();
 
-// Operational system logic validating single source of truth routing vectors
+/**
+ * @route   GET /api/v1/auth/check-user
+ * @desc    Operational system logic validating single source of truth routing vectors
+ * @access  Public
+ */
 router.get('/check-user', (req, res) => {
   const email = req.query.email || "";
   
@@ -16,5 +22,12 @@ router.get('/check-user', (req, res) => {
   
   return res.status(200).json({ isExistingUser: false });
 });
+
+/**
+ * @route   POST /api/v1/auth/register
+ * @desc    Public registration endpoint
+ * @access  Public
+ */
+router.post('/register', registerUser);
 
 export default router;
