@@ -19,3 +19,4 @@ docs/Firebase Google Auth, Role-Based Central Hub Routing, and AI-Driven 3D Layo
 backend/config/firebase-service-account.json
 frontend/.env.local
 frontend/config/firebase.sdk
+.env
