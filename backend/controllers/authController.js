@@ -1,80 +1,130 @@
 // backend/controllers/authController.js
-import * as admin from "../config/firebase.js";
+import admin from "../config/firebase.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import User from "../models/User.js"; 
 import Vendor from "../models/Vendor.js"; 
+import jwt from 'jsonwebtoken';
+
+const signToken = (id) =>
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
 /**
- * @desc    Automated Registration for Clients and Vendors
- * @route   POST /api/v1/auth/register
- * @access  Public
+ * Verifies active OAuth credentials and separates new accounts from returning users.
  */
-export const registerUser = asyncHandler(async (req, res) => {
-  const { email, password, displayName, role, businessName } = req.body;
-
-  // 1. Validation
-  if (!email || !password || !displayName || !role) {
-    throw new ApiError(400, "All primary fields (email, password, name, role) are required.");
+export const verifyTokenHandler = asyncHandler(async (req, res) => {
+  if (req.user) {
+    const token = signToken(req.user._id);
+    return res.status(200).json({
+      success: true,
+      isNewUser: false,
+      data: { id: req.user._id, name: req.user.name, email: req.user.email, role: req.user.role },
+      token,
+    });
   }
+  
+  return res.status(200).json({
+    success: true,
+    isNewUser: true,
+    email: req.firebaseEmail,
+    firebaseUid: req.firebaseUid
+  });
+});
 
-  const allowedRoles = ["vendor", "client"];
-  if (!allowedRoles.includes(role)) {
-    throw new ApiError(400, "Invalid application role requested.");
-  }
-
+/**
+ * Saves specific role attributes and configurations during onboarding initialization.
+ */
+export const completeProfile = asyncHandler(async (req, res) => {
+  const { name, role, businessName } = req.body;
+  if (!role) throw new ApiError(400, "An explicit role is required.");
+  
+  const allowedRoles = ["organiser", "vendor"];
+  if (!allowedRoles.includes(role)) throw new ApiError(400, "Unsupported platform assignment role.");
+  
   if (role === "vendor" && !businessName) {
-    throw new ApiError(400, "Vendors must provide a valid business name.");
+    throw new ApiError(400, "Vendors must provide an active commercial trade name.");
   }
+
+  let user = await User.findOne({ firebaseUid: req.firebaseUid });
+  if (user) throw new ApiError(400, "Profile mapping vectors are already established.");
+
+  user = await User.create({
+    name: name || req.firebaseEmail.split('@')[0],
+    email: req.firebaseEmail,
+    firebaseUid: req.firebaseUid,
+    role
+  });
+
+  if (role === "vendor") {
+    await Vendor.create({
+      owner: user._id,
+      businessName,
+      category: "other"
+    });
+  }
+
+  const token = signToken(user._id);
+  res.status(201).json({
+    success: true,
+    data: { id: user._id, name: user.name, email: user.email, role: user.role },
+    token
+  });
+});
+
+export const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role, businessName } = req.body;
+  if (!email || !password || !name || !role) {
+    throw new ApiError(400, "Primary fields are required.");
+  }
+
+  const existing = await User.findOne({ email });
+  if (existing) throw new ApiError(409, 'Email registration conflict detected.');
 
   let firebaseUser;
-
   try {
-    // 2. Create the User in Firebase Auth
     firebaseUser = await admin.auth().createUser({
       email,
       password,
-      displayName,
-      emailVerified: false,
+      displayName: name,
     });
 
-    // 3. Immediately inject the Custom Claim (Role) inside Firebase token
     await admin.auth().setCustomUserClaims(firebaseUser.uid, { role });
 
-    // 4. Save to your local Database
-    // Pass the Firebase uid as the local database primary key (_id) to keep them linked
-    const newLocalUser = await User.create({
-      _id: firebaseUser.uid, 
+    const user = await User.create({
+      name,
       email,
-      name: displayName,
+      password,
       role,
+      firebaseUid: firebaseUser.uid
     });
 
-    // If the registering user is a vendor, auto-provision their vendor profile
     if (role === "vendor") {
-      await Vendor.create({
-        user: firebaseUser.uid,
-        businessName,
-      });
+      if (!businessName) throw new ApiError(400, "Missing commercial name context mapping.");
+      await Vendor.create({ owner: user._id, businessName, category: "other" });
     }
 
-    // 5. Success response
-    res.status(201).json({
-      success: true,
-      message: `Successfully registered new ${role}!`,
-      data: {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        role: role,
-      },
-    });
-
+    const token = signToken(user._id);
+    res.status(201).json({ success: true, data: user, token });
   } catch (error) {
-    // Rollback mechanism: Clean up Firebase if database save fails
-    if (firebaseUser && firebaseUser.uid) {
-      await admin.auth().deleteUser(firebaseUser.uid);
-    }
-    
-    throw new ApiError(400, error.message || "Registration workflow failed.");
+    if (firebaseUser?.uid) await admin.auth().deleteUser(firebaseUser.uid);
+    throw new ApiError(400, error.message || "Native registration stack fault.");
   }
+});
+
+export const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email }).select('+password');
+  if (!user || !(await user.comparePassword(password))) {
+    throw new ApiError(401, 'Invalid authentication entries.');
+  }
+  const token = signToken(user._id);
+  res.status(200).json({
+    success: true,
+    data: { id: user._id, name: user.name, email: user.email, role: user.role },
+    token,
+  });
+});
+
+export const getCurrentUser = asyncHandler(async (req, res) => {
+  res.status(200).json({ success: true, data: req.user });
 });

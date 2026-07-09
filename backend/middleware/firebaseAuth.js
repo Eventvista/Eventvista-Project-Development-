@@ -1,3 +1,4 @@
+// backend/middleware/firebaseAuth.js
 import admin from "../config/firebase.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
