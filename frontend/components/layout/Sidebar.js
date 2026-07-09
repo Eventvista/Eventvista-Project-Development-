@@ -4,14 +4,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: "grid" },
   { label: "Events", href: "/events", icon: "calendar-event" },
   { label: "3D Designer", href: "/designer", icon: "cube" },
   { label: "Guests", href: "/guests", icon: "users" },
-  { label: "Vendors", href: "/vendors", icon: "briefcase" },
-  { label: "Budget", href: "/budget", icon: "wallet" },
+  { label: "Vendors", href: "/vendors", icon: "briefcase", roleRestrict: "client" },
+  { label: "Budget", href: "/budget", icon: "wallet", roleRestrict: "client" },
+  { label: "Inventory", href: "/inventory", icon: "briefcase", roleRestrict: "vendor" },
   { label: "Calendar", href: "/calendar", icon: "calendar" },
   { label: "Messages", href: "/messages", icon: "chat" },
   { label: "Reports", href: "/reports", icon: "chart" },
@@ -77,8 +79,8 @@ function NavIcon({ name }) {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { collapsed, toggleCollapsed, mobileNavOpen, toggleMobileNav } =
-    useSidebar();
+  const { role } = useAuth();
+  const { collapsed, toggleCollapsed, mobileNavOpen, toggleMobileNav } = useSidebar();
 
   return (
     <>
@@ -111,6 +113,11 @@ export default function Sidebar() {
 
         <ul className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {NAV_ITEMS.map((item) => {
+            // Check custom app role restrictions
+            if (item.roleRestrict && role !== item.roleRestrict) {
+              return null;
+            }
+
             const active = pathname?.startsWith(item.href);
             return (
               <li key={item.href}>
