@@ -12,6 +12,7 @@ import connectDB from './config/db.js';
 import swaggerSpec from './config/swagger.js';
 import errorHandler, { notFound } from './middleware/errorHandler.js';
 
+import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
@@ -26,7 +27,7 @@ const app = express();
 
 app.use(helmet());
 
-// 1. Configure CORS to use the CLIENT_ORIGIN environment variable
+// Configure CORS to use the CLIENT_ORIGIN environment variable
 const allowedOrigins = (process.env.CLIENT_ORIGIN || '').split(',').map((o) => o.trim());
 app.use(
   cors({
@@ -92,7 +93,7 @@ app.get('/api/v1/health', (req, res) => {
 /* Route Mounting                                                     */
 /* ------------------------------------------------------------------ */
 
-app.use('/api/v1/auth', userRoutes);
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/vendors', vendorRoutes);
