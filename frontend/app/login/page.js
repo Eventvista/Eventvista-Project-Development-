@@ -3,8 +3,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-// FIXED: Updated import path pointing to the shared components directory
-import { GoogleSignInButton, RoleSelectionModal } from "../components/GoogleAuthAndRoleSelect";
+import { GoogleSignInButton, RoleSelectionModal, AlphaTestingDashboard } from "../components/GoogleAuthAndRoleSelect";
+
+const ALPHA_TESTERS = [
+  "kariukilewis04@gmail.com",
+  "johnsimonwafula@gmail.com",
+  "muttasheky@gmail.com",
+  "giddyoseko35@gmail.com"
+];
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,6 +21,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [authenticatedEmail, setAuthenticatedEmail] = useState("");
+  const [showAlphaModule, setShowAlphaModule] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,17 +35,23 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-      
       const data = await res.json();
       
       if (data.success) {
         localStorage.setItem("token", data.token);
-        window.location.href = "/dashboard";
+        localStorage.setItem("userEmail", email);
+        
+        if (ALPHA_TESTERS.includes(email.toLowerCase())) {
+          setAuthenticatedEmail(email.toLowerCase());
+          setShowAlphaModule(true);
+        } else {
+          window.location.href = "/dashboard";
+        }
       } else {
         setError(data.message || "Invalid credentials");
       }
     } catch (err) {
-      setError("Failed to connect to the server.");
+      setError("Failed to connect to the system database server.");
     } finally {
       setIsLoading(false);
     }
@@ -45,41 +59,61 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    setTimeout(() => {
+    try {
+      // Direct integration checkpoint mimicking the Firebase Google Authentication pop-up process
+      setTimeout(async () => {
+        const dummyEmail = "johnsimonwafula@gmail.com"; 
+        setAuthenticatedEmail(dummyEmail);
+        localStorage.setItem("userEmail", dummyEmail);
+
+        if (ALPHA_TESTERS.includes(dummyEmail.toLowerCase())) {
+          setGoogleLoading(false);
+          setShowAlphaModule(true);
+          return;
+        }
+
+        // Standard user lifecycle check against the centralized database architecture
+        const databaseCheck = await fetch(`/api/v1/auth/check-user?email=${dummyEmail}`);
+        const userStatus = await databaseCheck.json();
+
+        setGoogleLoading(false);
+        if (userStatus.isExistingUser) {
+          localStorage.setItem("token", userStatus.token);
+          window.location.href = "/dashboard?projectContext=existing";
+        } else {
+          setShowRoleModal(true);
+        }
+      }, 1200);
+    } catch (err) {
+      setError("Authentication lifecycle error occurred via Google Provider.");
       setGoogleLoading(false);
-      setShowRoleModal(true);
-    }, 800);
+    }
   };
 
   const handleRoleSelect = async (role) => {
     setShowRoleModal(false);
-    window.location.href = "/dashboard";
+    // Persist completely new baseline data mapping for pristine users
+    window.location.href = `/dashboard?status=new&assignedRole=${role}`;
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
       <div className="flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
         
-        {/* Left Side Branding Graphic */}
         <div className="hidden flex-1 flex-col justify-between bg-purple-50 p-10 lg:flex">
           <div className="flex items-center gap-2">
             <span className="h-6 w-6 rounded-full bg-purple-600" />
             <span className="text-lg font-bold text-neutral-900">Eventvista</span>
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900">
-              Plan. Manage. <span className="text-purple-600">Celebrate.</span>
-            </h1>
-            <p className="mt-3 text-sm text-neutral-500">
-              Eventvista helps you organise events seamlessly and create unforgettable experiences.
-            </p>
+            <h1 className="text-3xl font-bold text-neutral-900">Plan. Manage. <span className="text-purple-600">Celebrate.</span></h1>
+            <p className="mt-3 text-sm text-neutral-500">Eventvista helps you organise events seamlessly and create unforgettable experiences.</p>
           </div>
           <div className="mt-8 flex-1 overflow-hidden rounded-2xl">
             <img src="/images/login photo.jpeg" alt="Event planning" className="w-full h-full object-cover" />
           </div>
         </div>
 
-        {/* Right Side Form Workspace */}
         <div className="flex flex-1 flex-col justify-center p-8 lg:p-12">
           <div className="mx-auto w-full max-w-sm">
             <h2 className="text-2xl font-bold text-neutral-900">Welcome Back!</h2>
@@ -118,7 +152,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 select-none text-base"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400"
                   >
                     {showPassword ? "🙈" : "👁"}
                   </button>
@@ -127,24 +161,13 @@ export default function LoginPage() {
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="rounded border-neutral-300 accent-purple-600 focus:ring-purple-500"
-                  />
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="rounded border-neutral-300 accent-purple-600" />
                   Remember Me
                 </label>
-                <button type="button" className="text-sm font-medium text-purple-600 hover:underline">
-                  Forgot Password?
-                </button>
+                <button type="button" className="text-sm font-medium text-purple-600 hover:underline">Forgot Password?</button>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-purple-700 disabled:opacity-70"
-              >
+              <button type="submit" disabled={isLoading} className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:opacity-70">
                 {isLoading ? "LOGGING IN..." : "LOGIN"}
               </button>
 
@@ -157,8 +180,7 @@ export default function LoginPage() {
               <GoogleSignInButton onClick={handleGoogleSignIn} loading={googleLoading} />
 
               <p className="text-center text-sm text-neutral-500 mt-4">
-                Don&apos;t have an account?{" "}
-                <Link href="/register" className="font-semibold text-purple-600 hover:underline">Sign Up</Link>
+                Don&apos;t have an account? <Link href="/register" className="font-semibold text-purple-600 hover:underline">Sign Up</Link>
               </p>
             </form>
           </div>
@@ -166,6 +188,10 @@ export default function LoginPage() {
       </div>
 
       <RoleSelectionModal open={showRoleModal} onSelect={handleRoleSelect} />
+      
+      {showAlphaModule && (
+        <AlphaTestingDashboard email={authenticatedEmail} onClose={() => setShowAlphaModule(false)} />
+      )}
     </div>
   );
 }
