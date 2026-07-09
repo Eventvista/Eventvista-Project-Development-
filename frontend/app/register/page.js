@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+// FIXED: Updated import path pointing to the shared components directory
 import { GoogleSignInButton, RoleSelectionModal } from "../components/GoogleAuthAndRoleSelect";
 
 export default function RegisterPage() {
