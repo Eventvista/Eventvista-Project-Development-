@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Target a highly secure data collection
+    match /financial_reports/{reportId} {
+      
+      // Authenticated users can read reports
+      allow read: if request.auth != null;
+      
+      // STRICT CONTROL: Only users with the explicit admin claim can modify records
+      allow write, delete: if request.auth.token.role == "admin";
+    }
+  }
+}

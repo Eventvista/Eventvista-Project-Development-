@@ -1,9 +1,16 @@
 // backend/config/firebase.js
-const admin = require("firebase-admin");
-const serviceAccount = require("./path-to-your-firebase-adminsdk-key.json");
+import admin from "firebase-admin";
+import { createRequire } from "module";
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+const require = createRequire(import.meta.url);
 
-module.exports = admin;
+// Update this to point exactly to your actual private key file name
+const serviceAccount = require("./firebase-service-account.json");
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
+
+export default admin;

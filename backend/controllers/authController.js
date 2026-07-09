@@ -1,14 +1,16 @@
 // backend/controllers/authController.js
-const admin = require("../config/firebase");
-const asyncHandler = require("../utils/asyncHandler");
-const ApiError = require("../utils/ApiError");
-const User = require("../models/User"); 
-const Vendor = require("../models/Vendor"); // If role is 'vendor', create their profile
+import * as admin from "../config/firebase.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+import User from "../models/User.js"; 
+import Vendor from "../models/Vendor.js"; 
 
-// @desc    Automated Registration for Clients and Vendors
-// @route   POST /api/auth/register
-// @access  Public
-const registerUser = asyncHandler(async (req, res) => {
+/**
+ * @desc    Automated Registration for Clients and Vendors
+ * @route   POST /api/v1/auth/register
+ * @access  Public
+ */
+export const registerUser = asyncHandler(async (req, res) => {
   const { email, password, displayName, role, businessName } = req.body;
 
   // 1. Validation
@@ -39,8 +41,8 @@ const registerUser = asyncHandler(async (req, res) => {
     // 3. Immediately inject the Custom Claim (Role) inside Firebase token
     await admin.auth().setCustomUserClaims(firebaseUser.uid, { role });
 
-    // 4. Save to your local Database for relational features (Events, Budgets, etc.)
-    // We pass the Firebase uid as the local database primary key (_id) to keep them linked
+    // 4. Save to your local Database
+    // Pass the Firebase uid as the local database primary key (_id) to keep them linked
     const newLocalUser = await User.create({
       _id: firebaseUser.uid, 
       email,
@@ -68,14 +70,11 @@ const registerUser = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    // Rollback mechanism: If the database save fails but Firebase succeeded, clean up Firebase
+    // Rollback mechanism: Clean up Firebase if database save fails
     if (firebaseUser && firebaseUser.uid) {
       await admin.auth().deleteUser(firebaseUser.uid);
     }
     
-    // Handle Firebase email duplication or other errors gracefully
     throw new ApiError(400, error.message || "Registration workflow failed.");
   }
 });
-
-module.exports = { registerUser };
