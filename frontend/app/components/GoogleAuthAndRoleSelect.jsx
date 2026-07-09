@@ -1,19 +1,5 @@
+// frontend/app/components/GoogleAuthAndRoleSelect.jsx
 import React, { useState } from "react";
-
-/**
- * EventVista — Google Sign-In Button + Role Selection Modal
- * -----------------------------------------------------------
- * Drop these into your Login/Register pages.
- *
- * <GoogleSignInButton onClick={handleGoogleSignIn} />
- *   -> wire onClick to your Firebase signInWithPopup(googleProvider) call.
- *
- * <RoleSelectionModal
- *   open={showRoleModal}
- *   onSelect={(role) => saveRoleToFirestore(role)}
- * />
- *   -> show this only when a new Google user has no role set yet.
- */
 
 // ---------- Google Sign-In Button ----------
 export function GoogleSignInButton({ onClick, loading = false, label = "Continue with Google" }) {
@@ -23,15 +9,15 @@ export function GoogleSignInButton({ onClick, loading = false, label = "Continue
       onClick={onClick}
       disabled={loading}
       aria-label={label}
-      className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200
-                 bg-white px-5 py-3 text-slate-800 font-medium text-[15px]
+      className="w-full flex items-center justify-center gap-3 rounded-xl border border-neutral-200
+                 bg-white px-5 py-3 text-neutral-800 font-medium text-[15px]
                  shadow-sm transition-all duration-150
-                 hover:shadow-md hover:border-slate-300 active:scale-[0.98]
-                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500
+                 hover:shadow-md hover:border-neutral-300 active:scale-[0.98]
+                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500
                  disabled:opacity-60 disabled:cursor-not-allowed"
     >
       {loading ? (
-        <span className="h-5 w-5 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin" />
+        <span className="h-5 w-5 rounded-full border-2 border-neutral-300 border-t-purple-600 animate-spin" />
       ) : (
         <GoogleGlyph />
       )}
@@ -52,7 +38,7 @@ function GoogleGlyph() {
 }
 
 // ---------- Role Selection Modal ----------
-export function RoleSelectionModal({ open, onSelect, onClose }) {
+export function RoleSelectionModal({ open, onSelect }) {
   const [chosen, setChosen] = useState(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -80,17 +66,17 @@ export function RoleSelectionModal({ open, onSelect, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-sm px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="role-modal-title"
     >
       <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-xl">
-        <h2 id="role-modal-title" className="text-xl font-semibold text-slate-900">
+        <h2 id="role-modal-title" className="text-xl font-semibold text-neutral-900">
           One quick thing
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          How will you be using EventVista?
+        <p className="mt-1 text-sm text-neutral-500">
+          How will you be using Eventvista?
         </p>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -103,13 +89,13 @@ export function RoleSelectionModal({ open, onSelect, onClose }) {
                 onClick={() => setChosen(role.id)}
                 aria-pressed={selected}
                 className={`text-left rounded-xl border-2 p-4 transition-all duration-150
-                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500
+                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500
                   ${selected
-                    ? "border-indigo-600 bg-indigo-50"
-                    : "border-slate-200 hover:border-slate-300"}`}
+                    ? "border-purple-600 bg-purple-50"
+                    : "border-neutral-200 hover:border-neutral-300"}`}
               >
-                <div className="font-medium text-slate-900">{role.title}</div>
-                <div className="mt-1 text-xs text-slate-500">{role.copy}</div>
+                <div className="font-medium text-neutral-900">{role.title}</div>
+                <div className="mt-1 text-xs text-neutral-500">{role.copy}</div>
               </button>
             );
           })}
@@ -119,16 +105,16 @@ export function RoleSelectionModal({ open, onSelect, onClose }) {
           type="button"
           onClick={handleConfirm}
           disabled={!chosen || confirming}
-          className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3 font-medium text-white
-                     transition-all duration-150 hover:bg-indigo-700 active:scale-[0.98]
+          className="mt-6 w-full rounded-xl bg-purple-600 px-5 py-3 font-medium text-white
+                     transition-all duration-150 hover:bg-purple-700 active:scale-[0.98]
                      disabled:opacity-50 disabled:cursor-not-allowed
-                     focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                     focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500"
         >
           {confirming ? "Saving…" : "Continue"}
         </button>
 
-        <p className="mt-3 text-center text-xs text-slate-400">
-          You can't skip this step — we need it to set up your dashboard.
+        <p className="mt-3 text-center text-xs text-neutral-400">
+          You can not skip this step — we need it to set up your dashboard.
         </p>
       </div>
     </div>

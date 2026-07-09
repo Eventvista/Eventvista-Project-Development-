@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GoogleSignInButton, RoleSelectionModal } from "./GoogleAuthAndRoleSelect";
+import { GoogleSignInButton, RoleSelectionModal } from "../components/GoogleAuthAndRoleSelect";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -44,21 +44,23 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    // TODO (John): real signInWithPopup(auth, googleProvider) call goes here,
-    // then check Firestore — if user has no role yet, open the modal.
-    setGoogleLoading(false);
-    setShowRoleModal(true); // temporary, until John's real check replaces this
+    // Simulated authentication pipeline hook
+    setTimeout(() => {
+      setGoogleLoading(false);
+      setShowRoleModal(true);
+    }, 800);
   };
 
   const handleRoleSelect = async (role) => {
-    // TODO (John): write `role` to this user's Firestore doc
     setShowRoleModal(false);
     window.location.href = "/dashboard";
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
-      <div className="flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-floating">
+      <div className="flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
+        
+        {/* Left Side Branding Graphic */}
         <div className="hidden flex-1 flex-col justify-between bg-purple-50 p-10 lg:flex">
           <div className="flex items-center gap-2">
             <span className="h-6 w-6 rounded-full bg-purple-600" />
@@ -73,10 +75,11 @@ export default function LoginPage() {
             </p>
           </div>
           <div className="mt-8 flex-1 overflow-hidden rounded-2xl">
-            <img src="/images/login photo.jpeg" alt="Event planning" className="w-full h-full object-contain" />
+            <img src="/images/login photo.jpeg" alt="Event planning" className="w-full h-full object-cover" />
           </div>
         </div>
 
+        {/* Right Side Form Workspace */}
         <div className="flex flex-1 flex-col justify-center p-8 lg:p-12">
           <div className="mx-auto w-full max-w-sm">
             <h2 className="text-2xl font-bold text-neutral-900">Welcome Back!</h2>
@@ -115,7 +118,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 select-none text-base"
                   >
                     {showPassword ? "🙈" : "👁"}
                   </button>
@@ -123,12 +126,12 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-neutral-600">
+                <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
-                    className="rounded border-neutral-300 accent-purple-600"
+                    className="rounded border-neutral-300 accent-purple-600 focus:ring-purple-500"
                   />
                   Remember Me
                 </label>
@@ -145,19 +148,15 @@ export default function LoginPage() {
                 {isLoading ? "LOGGING IN..." : "LOGIN"}
               </button>
 
-              <div className="relative flex items-center gap-3">
+              <div className="relative flex items-center gap-3 py-1">
                 <div className="flex-1 border-t border-neutral-200" />
                 <span className="text-xs text-neutral-400">OR</span>
                 <div className="flex-1 border-t border-neutral-200" />
               </div>
 
-              <button type="button" className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 py-3 text-sm font-medium text-neutral-700 transition-colors duration-200 hover:bg-neutral-50">
-                <span className="text-lg">G</span>
-                Continue with Google
-              </button>
               <GoogleSignInButton onClick={handleGoogleSignIn} loading={googleLoading} />
 
-              <p className="text-center text-sm text-neutral-500">
+              <p className="text-center text-sm text-neutral-500 mt-4">
                 Don&apos;t have an account?{" "}
                 <Link href="/register" className="font-semibold text-purple-600 hover:underline">Sign Up</Link>
               </p>
