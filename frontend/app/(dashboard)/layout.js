@@ -1,4 +1,6 @@
-// frontend/app/(dashboard)/layout.js
+// ==========================================
+// COMBINED FRONTEND ENTRY: app/(dashboard)/layout.js
+// ==========================================
 import { SidebarProvider } from "@/context/SidebarContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
@@ -10,9 +12,12 @@ export default function DashboardLayout({ children }) {
         <Sidebar />
         <div className="flex flex-1 flex-col lg:ml-64 transition-all duration-300">
           <Navbar />
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 p-4 sm:p-6">
+             {/* Child pages (Dashboard, Budget, Events, etc.) render here */}
+            {children}
+          </main>
         </div>
       </div>
     </SidebarProvider>
   );
-} // Fixed: Added missing closing braces
+}

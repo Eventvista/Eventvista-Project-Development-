@@ -1,4 +1,6 @@
-// backend/server.js
+// ==========================================
+// COMBINED BACKEND ENTRY: server.js
+// ==========================================
 import 'dotenv/config';
 import 'express-async-errors';
 import express from 'express';
@@ -12,6 +14,7 @@ import connectDB from './config/db.js';
 import swaggerSpec from './config/swagger.js';
 import errorHandler, { notFound } from './middleware/errorHandler.js';
 
+// Route Imports
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
