@@ -1,3 +1,4 @@
+// backend/controllers/aiController.js
 /**
  * @file backend/controllers/aiController.js
  * @description Core AI Controller for Eventvista. Synthesizes spatial boundary parsing,
