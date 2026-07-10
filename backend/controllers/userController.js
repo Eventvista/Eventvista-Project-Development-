@@ -42,3 +42,36 @@ export const loginUser = asyncHandler(async (req, res) => {
 export const getCurrentUser = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: req.user });
 });
+
+/**
+ * @route   GET /api/v1/users
+ * @desc    Retrieves all registered platform users.
+ * @access  Private (Admin Only)
+ */
+export const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find().select('-password').sort({ createdAt: -1 });
+  res.status(200).json({ success: true, count: users.length, data: users });
+});
+
+/**
+ * @route   PUT /api/v1/users/role
+ * @desc    Dynamically mutates a user's role authorization.
+ * @access  Private (Admin Only)
+ */
+export const updateUserRole = asyncHandler(async (req, res) => {
+  const { userId, newRole } = req.body;
+  
+  if (!['organiser', 'vendor', 'admin'].includes(newRole)) {
+    throw new ApiError(400, 'Invalid role assignment provided.');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId, 
+    { role: newRole }, 
+    { new: true, runValidators: true }
+  ).select('-password');
+  
+  if (!user) throw new ApiError(404, 'User not found.');
+
+  res.status(200).json({ success: true, data: user });
+});
