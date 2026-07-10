@@ -13,8 +13,20 @@ import Vendor from "../models/Vendor.js";
 import jwt from 'jsonwebtoken';
 
 // =========================================================================
-// SECTION 1: UTILITY HELPER FUNCTIONS
+// SECTION 1: UTILITY HELPER & CONSTANTS
 // =========================================================================
+
+/**
+ * Explicit array containing designated project collaborator emails.
+ * These emails will automatically bypass standard role assignments and be 
+ * granted elevated "admin" privileges upon registration or profile completion.
+ */
+const COLLABORATOR_ADMINS = [
+  "kariukilewis04@gmail.com",
+  "johnsimonwafula@gmail.com",
+  "muttasheky@gmail.com",
+  "giddyoseko35@gmail.com"
+];
 
 /**
  * @function signToken
@@ -31,19 +43,10 @@ const signToken = (id) =>
   );
 
 // =========================================================================
-// SECTION 2: FIREBASE / OAUTH TOKEN VERIFICATION HANDSHAKE (SSOT ENTRY)
+// SECTION 2: FIREBASE / OAUTH TOKEN VERIFICATION HANDSHAKE
 // =========================================================================
 
-/**
- * @route   POST /api/v1/auth/session-verify
- * @desc    SSOT entry point for the Google/Firebase OAuth lifecycle.
- *          Frontend handles client credential sign-in via `signInWithPopup`, retrieves an ID token, 
- *          and sends it as a Bearer string. Pre-routing token verification middleware attaches 
- *          `req.user` if a corresponding MongoDB profile exists.
- * @access  Public (Requires Valid Firebase Authorization Header)
- */
 export const verifyTokenHandler = asyncHandler(async (req, res) => {
-  // If the user already has a matching profile record inside MongoDB, bypass registration steps
   if (req.user) {
     const token = signToken(req.user._id);
     return res.status(200).json({
@@ -59,8 +62,6 @@ export const verifyTokenHandler = asyncHandler(async (req, res) => {
     });
   }
 
-  // FIX: Explicitly prevents unauthenticated user enumeration endpoints (e.g., an unauthenticated GET /check-user).
-  // If no MongoDB record is linked to this Firebase identity, signal the client to display the role selection step.
   return res.status(200).json({
     success: true,
     isNewUser: true,
@@ -73,89 +74,95 @@ export const verifyTokenHandler = asyncHandler(async (req, res) => {
 // SECTION 3: SOCIAL SIGN-IN ONBOARDING PROFILE COMPLETION
 // =========================================================================
 
-/**
- * @route   POST /api/v1/auth/complete-profile
- * @desc    Saves specialized role and business data structures for completely new social accounts
- *          immediately following client-side Firebase user creation[cite: 3].
- * @access  Private (Firebase Context Enforced)
- */
 export const completeProfile = asyncHandler(async (req, res) => {
-  const { name, role, businessName } = req.body;
+  const { name, businessName } = req.body;
+  const email = req.firebaseEmail.toLowerCase();
   
-  // 1. Structural Parameter Validations
-  if (!role) throw new ApiError(400, "An explicit system platform role assignment is required.");
+  // 1. Dynamic Role Promotion (Admin Scaling)
+  let assignedRole = req.body.role;
+  if (COLLABORATOR_ADMINS.includes(email)) {
+    assignedRole = "admin";
+  }
 
-  const allowedRoles = ["organiser", "vendor"];
-  if (!allowedRoles.includes(role)) {
+  // 2. Structural Parameter Validations
+  if (!assignedRole) throw new ApiError(400, "An explicit system platform role assignment is required.");
+
+  const allowedRoles = ["organiser", "vendor", "admin"];
+  if (!allowedRoles.includes(assignedRole)) {
     throw new ApiError(400, "Unsupported platform assignment role type specified.");
   }
 
-  if (role === "vendor" && !businessName) {
+  if (assignedRole === "vendor" && !businessName) {
     throw new ApiError(400, "Vendors must provide an active commercial business trade name.");
   }
 
-  // 2. Identity Collision Guard
-  let user = await User.findOne({ firebaseUid: req.firebaseUid });
-  if (user) throw new ApiError(409, "Profile mapping vectors are already established for this identity root.");
+  try {
+    // 3. Database Ingestion using Upsert Engine to prevent duplication collisions
+    const user = await User.findOneAndUpdate(
+      { firebaseUid: req.firebaseUid },
+      { 
+        name: name || req.firebaseEmail.split('@')[0],
+        email: email,
+        role: assignedRole,
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
 
-  // 3. Database Ingestion (SSOT Record Initialization)
-  user = await User.create({
-    name: name || req.firebaseEmail.split('@')[0],
-    email: req.firebaseEmail,
-    firebaseUid: req.firebaseUid,
-    role,
-  });
+    // 4. Dependent Domain Collection Partitioning (Upsert for Vendors)
+    if (assignedRole === "vendor") {
+      await Vendor.findOneAndUpdate(
+        { owner: user._id },
+        { businessName, category: "other" },
+        { new: true, upsert: true, runValidators: true }
+      );
+    }
 
-  // 4. Dependent Domain Collection Partitioning
-  if (role === "vendor") {
-    await Vendor.create({
-      owner: user._id,
-      businessName,
-      category: "other",
+    // 5. Issue Master System Application Token
+    const token = signToken(user._id);
+    res.status(200).json({
+      success: true,
+      data: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role 
+      },
+      token,
     });
+  } catch (error) {
+    if (error.code === 11000) {
+      throw new ApiError(400, "Duplicate value for unique field: email.");
+    }
+    throw new ApiError(500, error.message || "Profile completion failed.");
   }
-
-  // 5. Issue Master System Application Token for immediate session upgrade
-  const token = signToken(user._id);
-  res.status(201).json({
-    success: true,
-    data: { 
-      id: user._id, 
-      name: user.name, 
-      email: user.email, 
-      role: user.role 
-    },
-    token,
-  });
 });
 
 // =========================================================================
 // SECTION 4: NATIVE EMAIL / PASSWORD AUTHENTICATION SUITE
 // =========================================================================
 
-/**
- * @route   POST /api/v1/auth/register
- * @desc    Registers a traditional email/password user natively. Synchronizes data by 
- *          dual-provisioning the identity entry inside Firebase Admin while generating 
- *          the matching local user entry inside MongoDB[cite: 1, 3].
- * @access  Public
- */
 export const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role, businessName } = req.body;
+  const { name, password, businessName } = req.body;
+  const email = req.body.email ? req.body.email.toLowerCase() : null;
   
-  // 1. Strict Form Field Presence Assessment
-  if (!email || !password || !name || !role) {
+  // 1. Dynamic Role Promotion (Admin Scaling for Native Auth)
+  let assignedRole = req.body.role;
+  if (email && COLLABORATOR_ADMINS.includes(email)) {
+    assignedRole = "admin";
+  }
+  
+  // 2. Strict Form Field Presence Assessment
+  if (!email || !password || !name || !assignedRole) {
     throw new ApiError(400, "Name, email, password, and role are all absolute compilation requirements.");
   }
 
-  // 2. Local Database State Collision Check
+  // 3. Local Database State Collision Check
   const existing = await User.findOne({ email });
   if (existing) throw new ApiError(409, "An account with this email infrastructure registration already exists.");
 
   let firebaseUser;
   try {
-    // 3. Mirror account creation into the Firebase engine
-    // Keeps Firebase as the centralized identity authority across all authentication pathways.
+    // 4. Mirror account creation into the Firebase engine
     firebaseUser = await admin.auth().createUser({
       email,
       password,
@@ -163,22 +170,20 @@ export const registerUser = asyncHandler(async (req, res) => {
     });
 
     // Enforce authorization custom identity claims inside the token metadata
-    await admin.auth().setCustomUserClaims(firebaseUser.uid, { role });
+    await admin.auth().setCustomUserClaims(firebaseUser.uid, { role: assignedRole });
 
-    // 4. FIX: Password Persistence & Schema Safeguarding (Bug #1)
-    // Local database records now correctly process the raw password string. The model layer 
-    // automatically hashes this string using a pre-save bcrypt hook, and firebaseUid is set to optional/sparse.
+    // 5. Local record instantiation
     const user = await User.create({
       name,
       email,
       password,
-      role,
+      role: assignedRole,
       firebaseUid: firebaseUser.uid,
     });
 
-    // 5. Dependent Vendor Allocation Guard
-    if (role === "vendor") {
-      if (!businessName) throw new ApiError(400, "Vendors must supply a valid commercial trade name context mapping[cite: 3].");
+    // 6. Dependent Vendor Allocation Guard
+    if (assignedRole === "vendor") {
+      if (!businessName) throw new ApiError(400, "Vendors must supply a valid commercial trade name context mapping.");
       await Vendor.create({ 
         owner: user._id, 
         businessName, 
@@ -186,7 +191,7 @@ export const registerUser = asyncHandler(async (req, res) => {
       });
     }
 
-    // 6. Output Clean Session Execution Token
+    // 7. Output Clean Session Execution Token
     const token = signToken(user._id);
     res.status(201).json({
       success: true,
@@ -199,8 +204,7 @@ export const registerUser = asyncHandler(async (req, res) => {
       token,
     });
   } catch (error) {
-    // FAIL-SAFE ROLLBACK: If MongoDB creation fails after Firebase has already provisions the account, 
-    // delete the orphaned Firebase record to ensure the two authentication systems remain synchronized[cite: 1].
+    // FAIL-SAFE ROLLBACK: Synchronize systems by pruning orphaned Firebase records on failure
     if (firebaseUser?.uid) {
       await admin.auth().deleteUser(firebaseUser.uid).catch(() => {});
     }
@@ -210,20 +214,14 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
-/**
- * @route   POST /api/v1/auth/login
- * @desc    Authenticates traditional native users. Uses custom database selection methods 
- *          to securely evaluate encrypted passwords without exposing hash signatures by default[cite: 1].
- * @access  Public
- */
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) throw new ApiError(400, 'Email and password fields are both required.');
 
-  // Explicitly fetch the password property (which uses select: false inside User.js for structural safety)[cite: 1]
-  const user = await User.findOne({ email }).select('+password');
+  // Explicitly fetch the password property 
+  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
   
-  // Utilize the custom schema method restored in User.js to safely verify the password[cite: 1]
+  // Safely verify the password
   if (!user || !(await user.comparePassword(password))) {
     throw new ApiError(401, 'Invalid authentication credentials provided.');
   }
@@ -245,11 +243,6 @@ export const loginUser = asyncHandler(async (req, res) => {
 // SECTION 5: ACCOUNT METADATA SYNC
 // =========================================================================
 
-/**
- * @route   GET /api/v1/auth/me
- * @desc    Retrieves the authentic master profile model linked to the requesting session[cite: 3].
- * @access  Private
- */
 export const getCurrentUser = asyncHandler(async (req, res) => {
   res.status(200).json({ 
     success: true, 
