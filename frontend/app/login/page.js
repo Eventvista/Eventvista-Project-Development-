@@ -1,10 +1,21 @@
 // frontend/app/login/page.js
+/**
+ * @file frontend/app/login/page.js
+ * @description Central authentication routing portal for Eventvista.
+ * Integrates classic identity credential challenges with explicit live Firebase
+ * Google Auth provider popups and backend profile verification checks.
+ */
+
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { GoogleSignInButton, RoleSelectionModal, AlphaTestingDashboard } from "../components/GoogleAuthAndRoleSelect";
+import { signInWithGoogle, completeProfile } from "../lib/authClient";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+
+// Retained static testing index for local alpha developer access routing
 const ALPHA_TESTERS = [
   "kariukilewis04@gmail.com",
   "johnsimonwafula@gmail.com",
@@ -21,85 +32,116 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [pendingIdToken, setPendingIdToken] = useState(null);
+  
+  // Alpha state hooks preserved for internal diagnostic modules
   const [authenticatedEmail, setAuthenticatedEmail] = useState("");
   const [showAlphaModule, setShowAlphaModule] = useState(false);
 
+  // =========================================================================
+  // SECTION 1: TRADITIONAL EMAIL / PASSWORD SECURITY CHALLENGE
+  // =========================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      
+
       if (data.success) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("userEmail", email);
-        
-        if (ALPHA_TESTERS.includes(email.toLowerCase())) {
-          setAuthenticatedEmail(email.toLowerCase());
+        localStorage.setItem("userEmail", data.data.email || email);
+        localStorage.setItem("userRole", data.data.role);
+
+        // Alpha testing gateway bypass toggle condition
+        if (ALPHA_TESTERS.includes((data.data.email || email).toLowerCase())) {
+          setAuthenticatedEmail((data.data.email || email).toLowerCase());
           setShowAlphaModule(true);
         } else {
           window.location.href = "/dashboard";
         }
       } else {
-        setError(data.message || "Invalid credentials");
+        setError(data.message || "Invalid credentials provided.");
       }
     } catch (err) {
-      setError("Failed to connect to the system database server.");
+      setError("Could not reach the Eventvista system database server. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // =========================================================================
+  // SECTION 2: FIREBASE FEDERATED GOOGLE POPUP CHECKPOINT (SSOT LINK)
+  // =========================================================================
+  /**
+   * Spawns true identity popups and drops mock hardcoded timeouts[cite: 11].
+   * Defers new-vs-returning status evaluation parameters natively to MongoDB.
+   */
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    setError("");
     try {
-      // Direct integration checkpoint mimicking the Firebase Google Authentication pop-up process
-      setTimeout(async () => {
-        const dummyEmail = "johnsimonwafula@gmail.com"; 
-        setAuthenticatedEmail(dummyEmail);
-        localStorage.setItem("userEmail", dummyEmail);
+      const result = await signInWithGoogle();
+      const userEmailLower = result.email?.toLowerCase() || "";
 
-        if (ALPHA_TESTERS.includes(dummyEmail.toLowerCase())) {
-          setGoogleLoading(false);
+      if (result.isNewUser) {
+        // Pristine registration state: Hold token validation signature and request role
+        setPendingIdToken(result.idToken);
+        setShowRoleModal(true);
+      } else {
+        // Existing user instance verified via backend aggregation logic
+        if (ALPHA_TESTERS.includes(userEmailLower)) {
+          setAuthenticatedEmail(userEmailLower);
           setShowAlphaModule(true);
-          return;
-        }
-
-        // Standard user lifecycle check against the centralized database architecture
-        const databaseCheck = await fetch(`/api/v1/auth/check-user?email=${dummyEmail}`);
-        const userStatus = await databaseCheck.json();
-
-        setGoogleLoading(false);
-        if (userStatus.isExistingUser) {
-          localStorage.setItem("token", userStatus.token);
-          window.location.href = "/dashboard?projectContext=existing";
         } else {
-          setShowRoleModal(true);
+          window.location.href = "/dashboard";
         }
-      }, 1200);
+      }
     } catch (err) {
-      setError("Authentication lifecycle error occurred via Google Provider.");
+      console.error("Google cross-origin sign-in verification failure:", err);
+      setError(err.message || "Google authentication lifecycle was cancelled or failed via the Provider.");
+    } finally {
       setGoogleLoading(false);
     }
   };
 
-  const handleRoleSelect = async (role) => {
-    setShowRoleModal(false);
-    // Persist completely new baseline data mapping for pristine users
-    window.location.href = `/dashboard?status=new&assignedRole=${role}`;
+  // =========================================================================
+  // SECTION 3: NEW USER ROLE SELECTION & ADVISOR ONBOARDING FORWARDING
+  // =========================================================================
+  /**
+   * Handles profile finalization for brand-new authenticated sessions.
+   * Routes first-time signups smoothly through the AI Advisor onboarding pipeline.
+   */
+  const handleRoleSelect = async (role, businessName) => {
+    try {
+      setError("");
+      const profile = await completeProfile({
+        idToken: pendingIdToken,
+        role,
+        businessName,
+      });
+      
+      setShowRoleModal(false);
+      
+      // Send first-time registrations to build their first event project context before hitting dashboard
+      window.location.href = "/onboarding";
+    } catch (err) {
+      console.error("Profile completion processing issue:", err);
+      setError(err.message || "Could not save your account structural role configuration profile.");
+    }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
       <div className="flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
-        
+
+        {/* Informational Splash Sidebar Panel - Hidden on Mobile viewports */}
         <div className="hidden flex-1 flex-col justify-between bg-purple-50 p-10 lg:flex">
           <div className="flex items-center gap-2">
             <span className="h-6 w-6 rounded-full bg-purple-600" />
@@ -110,16 +152,17 @@ export default function LoginPage() {
             <p className="mt-3 text-sm text-neutral-500">Eventvista helps you organise events seamlessly and create unforgettable experiences.</p>
           </div>
           <div className="mt-8 flex-1 overflow-hidden rounded-2xl">
-            <img src="/images/login photo.jpeg" alt="Event planning" className="w-full h-full object-cover" />
+            <img src="/images/login photo.jpeg" alt="Event planning layout matrix" className="w-full h-full object-cover" />
           </div>
         </div>
 
+        {/* Active Interaction Form Inputs Control Region */}
         <div className="flex flex-1 flex-col justify-center p-8 lg:p-12">
           <div className="mx-auto w-full max-w-sm">
             <h2 className="text-2xl font-bold text-neutral-900">Welcome Back!</h2>
             <p className="mt-1 text-sm text-neutral-500">Sign in to continue to your account</p>
 
-            {error && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+            {error && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 animate-fade-in" aria-live="polite">{error}</div>}
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>
@@ -152,7 +195,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
                   >
                     {showPassword ? "🙈" : "👁"}
                   </button>
@@ -160,23 +203,24 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer select-none">
                   <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="rounded border-neutral-300 accent-purple-600" />
                   Remember Me
                 </label>
                 <button type="button" className="text-sm font-medium text-purple-600 hover:underline">Forgot Password?</button>
               </div>
 
-              <button type="submit" disabled={isLoading} className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:opacity-70">
+              <button type="submit" disabled={isLoading} className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:opacity-70 disabled:cursor-not-allowed">
                 {isLoading ? "LOGGING IN..." : "LOGIN"}
               </button>
 
               <div className="relative flex items-center gap-3 py-1">
                 <div className="flex-1 border-t border-neutral-200" />
-                <span className="text-xs text-neutral-400">OR</span>
+                <span className="text-xs text-neutral-400 select-none">OR</span>
                 <div className="flex-1 border-t border-neutral-200" />
               </div>
 
+              {/* Federated Identity Authentication Component Triggers */}
               <GoogleSignInButton onClick={handleGoogleSignIn} loading={googleLoading} />
 
               <p className="text-center text-sm text-neutral-500 mt-4">
@@ -187,8 +231,10 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Role Collection Modal Overlay Engine for first-time signups */}
       <RoleSelectionModal open={showRoleModal} onSelect={handleRoleSelect} />
       
+      {/* Alpha testing panel re-injection module */}
       {showAlphaModule && (
         <AlphaTestingDashboard email={authenticatedEmail} onClose={() => setShowAlphaModule(false)} />
       )}

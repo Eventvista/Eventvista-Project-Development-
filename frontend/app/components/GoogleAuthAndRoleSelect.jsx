@@ -1,16 +1,29 @@
 // frontend/app/components/GoogleAuthAndRoleSelect.jsx
+/**
+ * @file frontend/app/components/GoogleAuthAndRoleSelect.jsx
+ * @description Production-grade authentication component kit for Eventvista.
+ * Completely cleanses legacy in-memory and localStorage alpha-testing mocks[cite: 1].
+ * Enforces real Single Source of Truth (SSOT) client interactions with Firebase and MongoDB[cite: 1].
+ */
+
 "use client";
 
 import React, { useState } from "react";
 
-// In-memory or localStorage simulation of Firebase Google Authentication state for current branch integration
-const mockFirebaseGoogleAuth = async () => {
-  return new Promise((resolve) => setTimeout(() => {
-    // Modify this return object during local alpha testing to test various user routing scenarios
-    resolve({ email: "johnsimonwafula@gmail.com", name: "John Simon" });
-  }, 1000));
-};
+// =========================================================================
+// SECTION 1: GLOBAL BRANDED AUTHENTICATION UI
+// =========================================================================
 
+/**
+ * @component GoogleSignInButton
+ * @description Standardized, high-fidelity Google OAuth button conforming to corporate guidelines.
+ * Features built-in micro-interactions, disabled states, loading vectors, and accessible ARIA labels.
+ * 
+ * @param {Object} props
+ * @param {Function} props.onClick - Direct callback launching real identity provider handshakes.
+ * @param {boolean} [props.loading=false] - Blocks multi-click registration thread duplication.
+ * @param {string} [props.label="Continue with Google"] - Contextual button action text.
+ */
 export function GoogleSignInButton({ onClick, loading = false, label = "Continue with Google" }) {
   return (
     <button
@@ -40,63 +53,24 @@ export function GoogleSignInButton({ onClick, loading = false, label = "Continue
   );
 }
 
-export function AlphaTestingDashboard({ email, onClose }) {
-  const modules = [
-    { name: "Organiser Dashboard Workspace", route: "/dashboard?role=organiser" },
-    { name: "Vendor Management Terminal", route: "/vendors" },
-    { name: "3D Spatial Layout Designer Engine", route: "/designer" }
-  ];
+// =========================================================================
+// SECTION 2: METADATA CAPTURE & ACCOUNT PROVISIONING MODAL
+// =========================================================================
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/80 backdrop-blur-md px-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white p-8 border border-purple-200 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-neutral-100 pb-4 mb-4">
-          <div>
-            <span className="bg-purple-100 text-purple-700 text-xs font-bold uppercase px-3 py-1 rounded-full">Alpha Test Mode</span>
-            <h2 className="text-xl font-bold text-neutral-900 mt-2">Welcome Project Member</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Active Session Identifier: {email}</p>
-          </div>
-        </div>
-        
-        <p className="text-sm text-neutral-600 mb-6">
-          Your credentials grant access to specialized systems modules. Use the links below to test sandbox routing parameters.
-        </p>
-
-        <div className="space-y-3 mb-6">
-          {modules.map((mod, index) => (
-            <button
-              key={index}
-              onClick={() => { window.location.href = mod.route; }}
-              className="w-full flex items-center justify-between border border-neutral-200 rounded-xl p-4 text-left transition-all hover:bg-purple-50 hover:border-purple-300"
-            >
-              <span className="font-semibold text-neutral-800 text-sm">{mod.name}</span>
-              <span className="text-purple-600 text-sm font-medium">Launch →</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => { window.location.href = "/admin"; }}
-            className="flex-1 bg-neutral-900 text-white text-sm font-bold py-3.5 rounded-xl transition-colors hover:bg-neutral-800 text-center"
-          >
-            Access System Analytics (Admin)
-          </button>
-          <button
-            onClick={onClose}
-            className="border border-neutral-200 text-neutral-600 text-sm font-medium px-5 rounded-xl transition-colors hover:bg-neutral-50"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/**
+ * @component RoleSelectionModal
+ * @description Collects necessary structural attributes (Roles and commercial contexts).
+ * This data is sent to the backend database via authClient profiles immediately following new social logins.
+ * 
+ * @param {Object} props
+ * @param {boolean} props.open - State-driven display parameter toggling layout overlay.
+ * @param {Function} props.onSelect - Dispatches captured state values to parent profile serialization trees.
+ */
 export function RoleSelectionModal({ open, onSelect }) {
   const [chosen, setChosen] = useState(null);
+  const [businessName, setBusinessName] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState("");
 
   if (!open) return null;
 
@@ -105,19 +79,42 @@ export function RoleSelectionModal({ open, onSelect }) {
     { id: "vendor", title: "Vendor", copy: "List your services and get booked for events." },
   ];
 
+  /**
+   * Evaluates input constraints before executing the registration handshake.
+   */
   const handleConfirm = async () => {
     if (!chosen) return;
+
+    // FIX: Client validation preventing the creation of invalid vendor records in MongoDB[cite: 1, 3]
+    if (chosen === "vendor" && !businessName.trim()) {
+      setError("Business name is required for vendor accounts.");
+      return;
+    }
+
+    setError("");
     setConfirming(true);
-    await onSelect(chosen);
-    setConfirming(false);
+    
+    try {
+      // Dispatches metadata back to the master page context handler
+      await onSelect(chosen, businessName.trim() || undefined);
+    } catch (err) {
+      setError(err.message || "Could not save your profile. Please try again.");
+    } finally {
+      setConfirming(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 backdrop-blur-sm px-4" 
+      role="dialog" 
+      aria-modal="true"
+    >
       <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-xl">
         <h2 className="text-xl font-semibold text-neutral-900">One quick thing</h2>
         <p className="mt-1 text-sm text-neutral-500">How will you be using Eventvista?</p>
 
+        {/* Role Matrix Grid */}
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {roles.map((role) => {
             const selected = chosen === role.id;
@@ -125,7 +122,10 @@ export function RoleSelectionModal({ open, onSelect }) {
               <button
                 key={role.id}
                 type="button"
-                onClick={() => setChosen(role.id)}
+                onClick={() => {
+                  setChosen(role.id);
+                  setError(""); // Reset any prior validation warnings
+                }}
                 className={`text-left rounded-xl border-2 p-4 transition-all duration-150 ${
                   selected ? "border-purple-600 bg-purple-50" : "border-neutral-200 hover:border-neutral-300"
                 }`}
@@ -137,6 +137,29 @@ export function RoleSelectionModal({ open, onSelect }) {
           })}
         </div>
 
+        {/* 
+          PROGRESSIVE DISCLOSURE UI BLOCK
+          FIX: Explicitly reveals the commercial trade name text field only when 
+          the vendor role is active, keeping the interface focused and concise[cite: 1].
+        */}
+        {chosen === "vendor" && (
+          <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <label htmlFor="businessNameInput" className="sr-only">Business Name</label>
+            <input
+              id="businessNameInput"
+              type="text"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              placeholder="Business name"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            />
+          </div>
+        )}
+
+        {/* Dynamic Client Exception Messaging Banner */}
+        {error && <p className="mt-3 text-xs text-red-600" aria-live="polite">{error}</p>}
+
+        {/* Master Action Trigger */}
         <button
           type="button"
           onClick={handleConfirm}
