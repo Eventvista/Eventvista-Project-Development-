@@ -2,6 +2,11 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+
+
+
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -17,8 +22,18 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-neutral-900">Calendar</h1>
-
+      
+      {/* Enhanced Routing UX Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard">
+          <Button variant="secondary" className="px-3 py-1.5 text-xs">← Back to Dashboard</Button>
+          </Link>
+          <h1 className="text-2xl font-bold text-neutral-900">Calendar</h1>
+        </div>
+          {/* Left empty to match structural layout spacing */}
+        <div className="hidden sm:block" />
+         </div>
       <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-neutral-900">Calendar</h2>

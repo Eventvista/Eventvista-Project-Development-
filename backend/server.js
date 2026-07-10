@@ -21,6 +21,7 @@ import eventRoutes from './routes/eventRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
 import layoutRoutes from './routes/layoutRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();
 
@@ -102,6 +103,7 @@ app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/vendors', vendorRoutes);
 app.use('/api/v1/layouts', layoutRoutes);
 app.use('/api/v1/ai', aiRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

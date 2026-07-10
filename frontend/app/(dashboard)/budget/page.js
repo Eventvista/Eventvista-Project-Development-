@@ -1,4 +1,5 @@
 // frontend/app/(dashboard)/budget/page.js
+import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 
@@ -25,8 +26,14 @@ export default function BudgetPage() {
 
   return (
     <div className="space-y-6">
+      {/* Enhanced Routing UX Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard">
+            <Button variant="secondary" className="px-3 py-1.5 text-xs">← Back to Dashboard</Button>
+          </Link>
         <h1 className="text-2xl font-bold text-neutral-900">Budget Overview</h1>
+        </div>
         <Button>+ Add Expenses</Button>
       </div>
 

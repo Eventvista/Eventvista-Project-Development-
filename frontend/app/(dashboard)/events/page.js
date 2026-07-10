@@ -6,6 +6,8 @@ import DataTable from "@/components/molecules/DataTable";
 import SearchBar from "@/components/molecules/SearchBar";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import Link from "next/link";
+
 
 export default function EventsPage() {
   const [query, setQuery] = useState("");
@@ -69,7 +71,12 @@ export default function EventsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-neutral-900">Events</h1>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard">
+          <Button variant="secondary" className="px-3 py-1.5 text-xs">← Back to Dashboard</Button>
+          </Link>        
+          <h1 className="text-2xl font-bold text-neutral-900">Events</h1>
+          </div>
         <Button>+ New Event</Button>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

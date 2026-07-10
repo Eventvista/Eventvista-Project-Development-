@@ -2,6 +2,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Button from "@/components/ui/Button";
+import Link from "next/link";
 
 export default function GuestsPage({ params }) {
   // 1. Establish state containers for your real database items
@@ -53,7 +55,14 @@ export default function GuestsPage({ params }) {
 
   return (
     <div className="p-6 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex items-center gap-4">
+    <Link href="/dashboard">
+      <Button variant="secondary" className="px-3 py-1.5 text-xs">← Back to Dashboard</Button>
+    </Link>
       <h1 className="text-2xl font-bold">Guest List Management</h1>
+      </div>
+      </div>
 
       {/* Input Form connected directly to database writer action */}
       <form onSubmit={handleAddGuest} className="flex gap-4 p-4 border rounded bg-white">

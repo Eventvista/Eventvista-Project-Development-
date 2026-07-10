@@ -10,7 +10,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button"; // Added to support the new Header UI
 
 // Fallback safety routing for programmatic network handshakes
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
@@ -83,23 +85,23 @@ export default function ReportsPage() {
         backgroundColor: "#ffffff",
         useCORS: true 
       });
-      const imgData = canvas.toDataURL("image/png");[cite: 8]
+      const imgData = canvas.toDataURL("image/png");
 
-      const pdf = new jsPDF({ unit: "pt", format: "a4" });[cite: 8]
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const imgHeight = (canvas.height * pageWidth) / canvas.width;[cite: 8]
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
-      // Draw metadata title header onto the structural document layout canvas[cite: 8]
+      // Draw metadata title header onto the structural document layout canvas
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(14);
-      pdf.text(`Eventvista Report — ${event?.title || "Untitled Event"}`, 40, 40);[cite: 8]
+      pdf.text(`Eventvista Report — ${event?.title || "Untitled Event"}`, 40, 40);
       
-      // Inject rasterized base64 viewport snapshot image into page geometry[cite: 8]
-      pdf.addImage(imgData, "PNG", 0, 60, pageWidth, imgHeight);[cite: 8]
+      // Inject rasterized base64 viewport snapshot image into page geometry
+      pdf.addImage(imgData, "PNG", 0, 60, pageWidth, imgHeight);
       
-      // Stream final build payload assembly down to client document folder paths[cite: 8]
+      // Stream final build payload assembly down to client document folder paths
       const safeTitle = (event?.title || "report").replace(/\s+/g, "_");
-      pdf.save(`Eventvista_${safeTitle}.pdf`);[cite: 8]
+      pdf.save(`Eventvista_${safeTitle}.pdf`);
     } catch (err) {
       console.error("PDF generation exception:", err);
       setError("Could not generate the binary PDF asset. Please try again.");
@@ -121,11 +123,20 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Structural Page Control Panel Banner */}
+      
+      {/* Enhanced Routing UX Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-100 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Reports Engine</h1>
-          <p className="text-xs text-neutral-500 mt-1">AI strategy roadmap and 3D venue layout diagnostics for <span className="font-semibold text-purple-600">{event?.title}</span></p>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard">
+            <Button variant="secondary" className="px-3 py-1.5 text-xs">← Back to Dashboard</Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Reports Engine</h1>
+            <p className="text-xs text-neutral-500 mt-1">
+              AI strategy roadmap and 3D venue layout diagnostics for{" "}
+              <span className="font-semibold text-purple-600">{event?.title}</span>
+            </p>
+          </div>
         </div>
         <button
           onClick={handleDownloadPdf}
