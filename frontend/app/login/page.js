@@ -10,7 +10,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { GoogleSignInButton, RoleSelectionModal, AlphaTestingDashboard } from "../components/GoogleAuthAndRoleSelect";
+import { GoogleSignInButton, RoleSelectionModal } from "../components/GoogleAuthAndRoleSelect";
 import { signInWithGoogle, completeProfile } from "../lib/authClient";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
