@@ -9,6 +9,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
 import { signOutUser } from "@/app/lib/authClient";
 
@@ -20,6 +22,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef(null);
+  const router = useRouter();
 
   // =========================================================================
   // SECTION 1: AUTHENTICATED PROFILE LIFECYCLE SYNCHRONIZATION
@@ -50,6 +53,8 @@ export default function Navbar() {
           // Token is likely malformed or expired; clean up invalid cached state smoothly
           console.warn("Session validation failed. Clearing local storage token.");
           localStorage.removeItem("token");
+          localStorage.removeItem("userEmail");
+          localStorage.removeItem("userRole");
         }
       } catch (err) {
         console.error("Failed to synchronize Navbar profile metrics with server:", err);
@@ -82,11 +87,17 @@ export default function Navbar() {
   // =========================================================================
   const handleSignOutProcess = async () => {
     try {
+      // Execute contextual core signout sequence
       await signOutUser();
     } catch (err) {
       console.error("Firebase contextual logout threw an exception, clearing token manually:", err);
-      localStorage.clear();
     } finally {
+      // Clear all local session parameters to maintain SSOT integrity
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userRole");
+      
+      // Force clean redirect to application home landing page
       window.location.href = "/";
     }
   };
@@ -152,13 +163,13 @@ export default function Navbar() {
                   <p className="text-xs text-neutral-500 capitalize">{user.role}</p>
                 </div>
                 
-                <a
-                  href="/dashboard/settings"
-                  className="flex w-full items-center px-3 py-2 text-sm text-neutral-700 rounded-lg transition-colors hover:bg-neutral-50"
+                <Link
+                  href="/settings"
+                  className="flex w-full items-center px-3 py-2 text-sm text-neutral-700 rounded-lg transition-colors hover:bg-neutral-50 hover:text-purple-600"
                   onClick={() => setDropdownOpen(false)}
                 >
                   ⚙️ <span className="ml-2">Settings</span>
-                </a>
+                </Link>
                 
                 <hr className="my-1 border-neutral-100" />
                 
@@ -176,12 +187,12 @@ export default function Navbar() {
         ) : (
           /* Unauthenticated/Public Access State Layout View */
           <div className="flex gap-2">
-            <a href="/login" className="rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 transition-colors">
+            <Link href="/login" className="rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 transition-colors">
               Log In
-            </a>
-            <a href="/register" className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 transition-colors">
+            </Link>
+            <Link href="/register" className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 transition-colors">
               Sign Up
-            </a>
+            </Link>
           </div>
         )}
 

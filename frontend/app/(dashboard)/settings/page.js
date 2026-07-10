@@ -1,16 +1,16 @@
 // frontend/app/(dashboard)/settings/page.js
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState({
-    name: "John Simon",
-    email: "john@gmail.com",
-    phone: "0712242544",
-    role: "Client",
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
   });
 
   const [notifications, setNotifications] = useState({
@@ -20,14 +20,69 @@ export default function SettingsPage() {
     vendorUpdates: true,
     budgetAlerts: false,
   });
-
+  
+  const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
+  // SSOT: Fetch true user data from backend on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch("/api/v1/users/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          setProfile({
+            name: data.data.name || "",
+            email: data.data.email || "",
+            phone: data.data.phone || "",
+            role: data.data.role || "Client",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load user profile:", err);
+        setError("Failed to synchronize profile data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  // Sync changes back to the SSOT backend
   const handleSave = async () => {
-    await new Promise((r) => setTimeout(r, 800));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaved(false);
+    setError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/v1/users/me", {
+        method: "PUT",
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(profile)
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        setError(data.message || "Failed to update profile.");
+      }
+    } catch (err) {
+      setError("Network error occurred while saving.");
+    }
   };
+
+  if (loading) return <div className="p-6 text-neutral-500">Loading settings...</div>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -35,28 +90,23 @@ export default function SettingsPage() {
 
       {/* Profile Settings */}
       <Card>
-        <h2 className="mb-4 text-base font-semibold text-neutral-900">
-          Profile Information
-        </h2>
+        <h2 className="mb-4 text-base font-semibold text-neutral-900">Profile Information</h2>
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+        
         <div className="space-y-4">
           <div className="flex items-center gap-4 mb-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-xl font-bold text-purple-700">
-              {profile.name.split(" ").map((n) => n[0]).join("")}
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-xl font-bold text-purple-700 uppercase">
+              {profile.name ? profile.name.charAt(0) : "U"}
             </div>
             <div>
               <p className="text-sm font-semibold text-neutral-800">{profile.name}</p>
-              <p className="text-xs text-neutral-500">{profile.role}</p>
-              <button className="mt-1 text-xs font-medium text-purple-600 hover:underline">
-                Change Photo
-              </button>
+              <p className="text-xs text-neutral-500 capitalize">{profile.role}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">
-                Full Name
-              </label>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">Full Name</label>
               <input
                 type="text"
                 value={profile.name}
@@ -65,41 +115,22 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">
-                Email Address
-              </label>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">Email Address</label>
               <input
                 type="email"
                 value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                disabled
+                className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-500 cursor-not-allowed"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">
-                Phone Number
-              </label>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">Phone Number</label>
               <input
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                 className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">
-                Role
-              </label>
-              <select
-                value={profile.role}
-                onChange={(e) => setProfile({ ...profile, role: e.target.value })}
-                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
-              >
-                <option>Client</option>
-                <option>Event Planner</option>
-                <option>Vendor</option>
-                <option>Admin</option>
-              </select>
             </div>
           </div>
         </div>
