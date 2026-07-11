@@ -7,7 +7,7 @@ const nextConfig = {
     
     // Fallback cleanly to localhost when working across decentralized local workstations
     const backendUrl = isProd 
-      ? 'https://your-production-backend-url.com' // Deployed production backend base URL
+      ? 'https://eventista-backend-deployment.onrender.com' // Deployed production backend base URL
       : 'http://localhost:5000';
 
     return [
