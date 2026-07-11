@@ -23,7 +23,7 @@ import layoutRoutes from './routes/layoutRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
-import notificationRoutes from './routes/notificationRoutes';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 
 const app = express();
