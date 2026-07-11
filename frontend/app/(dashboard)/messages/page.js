@@ -1,71 +1,120 @@
 // frontend/app/(dashboard)/messages/page.js
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import Button from "@/components/ui/Button";
 
-const THREADS = [
-  { id: 1, name: "Elegant Decor", preview: "Typing…", time: "10:30 am", color: "bg-purple-500" },
-  { id: 2, name: "Classic Catering", preview: "Here is the……", time: "9:45 am", color: "bg-green-500" },
-  { id: 3, name: "Client. Alice", preview: "Thank you", time: "Yesterday", color: "bg-pink-500" },
-  { id: 4, name: "Team Group", preview: "Meeting at 4pm", time: "2 days ago", color: "bg-cyan-500" },
+const CHANNELS = [
+  { id: "vendor", name: "Vendor Channel", color: "bg-purple-500", description: "Coordination feed for logistics vendors" },
+  { id: "catering", name: "Catering Channel", color: "bg-green-500", description: "Food, beverage, and menu logistics" },
+  { id: "client", name: "Client Channel", color: "bg-pink-500", description: "Direct feedback channel with the event host" },
+  { id: "team", name: "Team Group", color: "bg-cyan-500", description: "Internal workspace operations mesh" },
 ];
 
-const MESSAGES = {
-  1: [
-    { id: 1, from: "them", text: "Hi John, we have received your request" },
-    { id: 2, from: "me", text: "Great! Please share the virtual setup" },
-    {
-      id: 3,
-      from: "them",
-      text: "Here is the 3D setup for the stage",
-      image: "/images/3d venue stage photo.jpeg",
-    },
-  ],
-  2: [
-    { id: 1, from: "them", text: "Here is the catering menu for your review" },
-    { id: 2, from: "me", text: "Looks great, thank you!" },
-  ],
-  3: [
-    { id: 1, from: "them", text: "Thank you for choosing us!" },
-  ],
-  4: [
-    { id: 1, from: "them", text: "Team meeting at 4pm today" },
-    { id: 2, from: "me", text: "I will be there" },
-  ],
-};
-
 export default function MessagesPage() {
-  const [active, setActive] = useState(1);
+  const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
-  const activeThread = THREADS.find((t) => t.id === active);
-  const activeMessages = MESSAGES[active] || [];
+  const [activeEventId, setActiveEventId] = useState("");
+  const [recipient, setRecipient] = useState("Vendor Channel");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef(null);
+
+  // Rehydrate channel configuration and context on mount
+  useEffect(() => {
+    const storedEventId = localStorage.getItem("activeEventId");
+    if (storedEventId) {
+      setActiveEventId(storedEventId);
+      fetchMessages(storedEventId);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  // Automatically scroll viewport to newest updates
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, recipient]);
+
+  const fetchMessages = async (eventId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/v1/messages/${eventId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) {
+        setMessages(json.data);
+      }
+    } catch (err) {
+      console.error("Communication rehydration failure:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!draft.trim() || !activeEventId) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          eventId: activeEventId,
+          text: draft,
+          recipientName: recipient,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setMessages((prev) => [...prev, json.data]);
+        setDraft("");
+      }
+    } catch (err) {
+      console.error("Message submission error:", err);
+    }
+  };
+
+  const activeChannelConfig = CHANNELS.find((c) => c.name === recipient) || CHANNELS[0];
+
+  // Filter messages by active channel and search parameters
+  const filteredMessages = messages
+    .filter((msg) => msg.recipientName === recipient)
+    .filter((msg) => msg.text.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  if (loading) {
+    return <div className="p-8 text-sm font-medium text-neutral-500 animate-pulse">Syncing secure communications network...</div>;
+  }
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-
-      {/* Left threads panel */}
-      <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-neutral-100 sm:block">
-        <h1 className="px-4 py-4 text-lg font-bold text-neutral-900">Messages</h1>
-        <ul>
-          {THREADS.map((thread) => (
-            <li key={thread.id}>
+    <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+      
+      {/* Left Threads/Channels Panel */}
+      <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-neutral-200 sm:block bg-neutral-50/50">
+        <h1 className="px-6 py-4 text-lg font-bold text-neutral-900 border-b border-neutral-100 bg-white">Messages</h1>
+        <ul className="divide-y divide-neutral-100">
+          {CHANNELS.map((channel) => (
+            <li key={channel.id}>
               <button
-                onClick={() => setActive(thread.id)}
-                className={`flex w-full items-center gap-3 border-b border-neutral-50 px-4 py-3 text-left transition-colors duration-200 ${
-                  active === thread.id ? "bg-purple-50" : "hover:bg-neutral-50"
+                onClick={() => setRecipient(channel.name)}
+                className={`flex w-full items-center gap-3 px-6 py-4 text-left transition-colors duration-200 ${
+                  recipient === channel.name ? "bg-purple-50/70 border-r-2 border-purple-600" : "hover:bg-neutral-50"
                 }`}
               >
-                <span className={`h-9 w-9 shrink-0 rounded-full ${thread.color}`} />
+                <span className={`h-3 w-3 shrink-0 rounded-full ${channel.color}`} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-neutral-800">
-                    {thread.name}
+                    {channel.name}
                   </span>
-                  <span className="block truncate text-xs text-neutral-500">
-                    {thread.preview}
+                  <span className="block truncate text-xs text-neutral-400 mt-0.5">
+                    {channel.description}
                   </span>
-                </span>
-                <span className="shrink-0 text-xs text-neutral-400">
-                  {thread.time}
                 </span>
               </button>
             </li>
@@ -73,85 +122,98 @@ export default function MessagesPage() {
         </ul>
       </aside>
 
-      {/* Right chat panel */}
-      <section className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4">
+      {/* Right Chat Terminal Framework */}
+      <section className="flex flex-1 flex-col bg-white">
+        
+        {/* Dynamic Recipient Header */}
+        <header className="flex items-center justify-between gap-3 border-b border-neutral-100 px-6 py-4 bg-white">
           <div className="flex items-center gap-3">
-            <span className={`h-9 w-9 rounded-full ${activeThread.color}`} />
+            <span className={`h-3 w-3 rounded-full ${activeChannelConfig.color} animate-ping`} />
             <div>
-              <p className="text-sm font-semibold text-neutral-800">
-                {activeThread.name}
-              </p>
-              <p className="text-xs text-green-500">Online</p>
+              <p className="text-sm font-semibold text-neutral-800">{recipient}</p>
+              <p className="text-[11px] text-neutral-400">SSOT Live Messaging Protocol</p>
             </div>
           </div>
-          <button className="text-neutral-400 hover:text-neutral-600">
+          <button className="text-neutral-400 hover:text-neutral-600 transition-colors" aria-label="Channel Actions">
             •••
           </button>
         </header>
 
-        {/* Search bar */}
-        <div className="border-b border-neutral-100 px-5 py-2">
+        {/* Client-side Live Search Area */}
+        <div className="border-b border-neutral-100 px-6 py-2 bg-neutral-50/30">
           <input
             type="search"
-            placeholder="Search messages.."
-            className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={`Search secure logs inside ${recipient}...`}
+            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100/50"
           />
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 space-y-4 overflow-y-auto p-5">
-          {activeMessages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-sm rounded-2xl px-4 py-2.5 text-sm ${
-                  msg.from === "me"
-                    ? "rounded-tr-none bg-purple-100 text-purple-800"
-                    : "rounded-tl-none bg-neutral-100 text-neutral-700"
-                }`}
-              >
-                {msg.text}
-                {msg.image && (
-                  <div className="mt-2 overflow-hidden rounded-lg">
-                    <img
-                      src={msg.image}
-                      alt="3D venue setup"
-                      className="w-full max-w-xs rounded-lg object-cover"
-                    />
-                  </div>
-                )}
-              </div>
+        {/* Message Pipeline Shell */}
+        <div className="flex-1 space-y-4 overflow-y-auto p-6 bg-neutral-50/30">
+          {!activeEventId ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <span className="text-2xl mb-2">⚠️</span>
+              <p className="text-xs text-neutral-500 max-w-xs">No active event scope selected. Return to your dashboard to open a deployment pipeline.</p>
             </div>
-          ))}
+          ) : filteredMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <span className="text-xl mb-2">💬</span>
+              <p className="text-xs text-neutral-400">No coordination history found matching this terminal state.</p>
+            </div>
+          ) : (
+            filteredMessages.map((msg) => {
+              const isMe = msg.sender === "me";
+              return (
+                <div key={msg._id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                  <div
+                    className={`max-w-md rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                      isMe
+                        ? "rounded-tr-none bg-purple-600 text-white"
+                        : "rounded-tl-none bg-white border border-neutral-200 text-neutral-800"
+                    }`}
+                  >
+                    <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                    
+                    {/* Retroactive rendering wrapper for system images embedded inside data blocks */}
+                    {msg.image && (
+                      <div className="mt-2 overflow-hidden rounded-lg border border-neutral-100">
+                        <img
+                          src={msg.image}
+                          alt="Visual Attachment Asset Pipeline"
+                          className="w-full max-w-xs rounded-lg object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-neutral-400 mt-1 px-1 tracking-tight">
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setDraft("");
-          }}
-          className="flex items-center gap-3 border-t border-neutral-100 p-4"
-        >
+        {/* Message Writeback Submission Form */}
+        <form onSubmit={handleSend} className="border-t border-neutral-200 p-4 bg-white flex gap-3 items-center">
           <label htmlFor="message-input" className="sr-only">
-            Type a message
+            Type secure coordination message
           </label>
           <input
             id="message-input"
+            type="text"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Type a Message"
-            className="flex-1 rounded-lg border border-neutral-200 px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            disabled={!activeEventId}
+            placeholder={activeEventId ? "Type secure coordination message..." : "Select an event context to begin messaging..."}
+            className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed"
           />
-          <button
-            type="submit"
-            className="rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors duration-200"
-          >
+          <Button type="submit" disabled={!draft.trim() || !activeEventId}>
             Send
-          </button>
+          </Button>
         </form>
       </section>
     </div>
