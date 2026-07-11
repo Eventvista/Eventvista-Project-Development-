@@ -43,8 +43,8 @@ export default function ReportsPage() {
 
     // Concurrently fetch event records and 3D telemetry definitions
     Promise.all([
-      fetch(`${API_BASE}/events/${eventId}`, { headers }).then((r) => r.json()),
-      fetch(`${API_BASE}/layouts/${eventId}`, { headers }).then((r) => r.json()).catch(() => null),
+      fetch("/api/v1/events/${eventId}", { headers }).then((r) => r.json()),
+      fetch("/api/v1/layouts/${eventId}", { headers }).then((r) => r.json()).catch(() => null),
     ])
       .then(([eventRes, layoutRes]) => {
         if (!eventRes.success) {

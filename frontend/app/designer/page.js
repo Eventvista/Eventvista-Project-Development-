@@ -75,7 +75,7 @@ function DesignerContent() {
       try {
         const base64String = reader.result;
 
-        const response = await fetch(`${API_BASE}/ai/generate-layout`, {
+        const response = await fetch("/api/v1/ai/generate-layout", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({
@@ -132,7 +132,7 @@ function DesignerContent() {
     
     try {
       // FIX: Replaces mock setTimeout windows with production server synchronization routes
-      const res = await fetch(`${API_BASE}/ai/advisor-plan`, {
+      const res = await fetch("/api/v1/ai/advisor-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ eventId, prompt: aiPrompt }),

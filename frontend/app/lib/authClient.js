@@ -59,7 +59,7 @@ export async function signInWithGoogle() {
     const idToken = await result.user.getIdToken();
 
     // Verify token validity directly against the central server security framework
-    const res = await fetch(`${API_BASE}/auth/session-verify`, {
+    const res = await fetch("/api/v1/auth/session-verify", {
       method: "POST",
       headers: { Authorization: `Bearer ${idToken}` },
     });
@@ -103,7 +103,7 @@ export async function signInWithGoogle() {
  * @returns {Promise<object>} The fully established MongoDB user record data map.
  */
 export async function completeProfile({ idToken, name, role, businessName }) {
-  const res = await fetch(`${API_BASE}/users/complete-profile`, {
+  const res = await fetch("/api/v1/users/complete-profile", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
