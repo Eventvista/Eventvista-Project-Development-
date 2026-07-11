@@ -1,201 +1,259 @@
 // frontend/components/layout/Navbar.js
-/**
- * @file frontend/components/layout/Navbar.js
- * @description Production-grade global application navigation header for Eventvista.
- * Features asynchronous authenticated state synchronization via backend user endpoints,
- * dynamic responsive rendering, and an identity profile dropdown for settings and session teardown.
- */
-
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
-import { signOutUser } from "@/app/lib/authClient";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+import { auth } from "@/config/firebase";
+import { signOut } from "firebase/auth";
 
 export default function Navbar() {
   const { toggleMobileNav } = useSidebar();
-  const [user, setUser] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const dropdownRef = useRef(null);
   const router = useRouter();
+  
+  // SSOT User & UI State Management
+  const [user, setUser] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // =========================================================================
-  // SECTION 1: AUTHENTICATED PROFILE LIFECYCLE SYNCHRONIZATION
-  // =========================================================================
+  // Notification State Management
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  // Hydrate user profile from MongoDB server context
   useEffect(() => {
-    async function fetchUserProfile() {
+    const fetchSSOTUser = async () => {
       const token = localStorage.getItem("token");
-      
-      // If no session token resides in local storage, do not render user identity details
       if (!token) {
-        setIsLoading(false);
+        setLoading(false);
         return;
       }
 
       try {
-        const res = await fetch(`${API_BASE}/users/me`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
+        const res = await fetch("/api/v1/users/me", {
+          headers: { Authorization: `Bearer ${token}` }
         });
-
-        const body = await res.json();
-        if (res.ok && body.success) {
-          setUser(body.data);
-        } else {
-          // Token is likely malformed or expired; clean up invalid cached state smoothly
-          console.warn("Session validation failed. Clearing local storage token.");
-          localStorage.removeItem("token");
-          localStorage.removeItem("userEmail");
-          localStorage.removeItem("userRole");
+        const json = await res.json();
+        if (json.success) {
+          setUser(json.data);
         }
-      } catch (err) {
-        console.error("Failed to synchronize Navbar profile metrics with server:", err);
+      } catch (error) {
+        console.error("SSOT client data layer synchronization failed:", error);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
-    }
-
-    fetchUserProfile();
+    };
+    
+    fetchSSOTUser();
   }, []);
 
-  // =========================================================================
-  // SECTION 2: DISMISSAL CLICK LISTENERS (OUTSIDE DROPDOWN DETECTION)
-  // =========================================================================
+  // Fetch and poll live notifications
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
+    const fetchNotifications = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch("/api/v1/notifications", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (json.success) {
+          setNotifications(json.data);
+          setUnreadCount(json.unreadCount);
+        }
+      } catch (err) {
+        console.error("Notification sync failed:", err);
       }
-    }
+    };
 
-    if (dropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [dropdownOpen]);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // poll every 30s
+    return () => clearInterval(interval);
+  }, []);
 
-  // =========================================================================
-  // SECTION 3: SESSION DEPRECATION PROCESSOR
-  // =========================================================================
-  const handleSignOutProcess = async () => {
+  // Multi-tier absolute session teardown sequence
+  const handleSignOut = async () => {
     try {
-      // Execute contextual core signout sequence
-      await signOutUser();
-    } catch (err) {
-      console.error("Firebase contextual logout threw an exception, clearing token manually:", err);
-    } finally {
-      // Clear all local session parameters to maintain SSOT integrity
-      localStorage.removeItem("token");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("userRole");
-      
-      // Force clean redirect to application home landing page
-      window.location.href = "/";
+      await signOut(auth); // Terminate active edge instances via Firebase Provider
+      localStorage.removeItem("token"); // Clear localized database token signatures
+      router.push("/"); // Securely route user back to marketing page root
+    } catch (error) {
+      console.error("Session termination execution pipeline fault:", error);
     }
   };
 
-  // Helper utility to generate initials from a name safely
-  const getInitials = (name) => {
-    if (!name) return "U";
-    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  // Search submission router routing
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!searchValue.trim()) return;
+    router.push(`/events?q=${encodeURIComponent(searchValue)}`);
+  };
+
+  // Helper calculation to parse name initials safely
+  const getInitials = (nameString) => {
+    if (!nameString) return "?";
+    return nameString
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
   return (
-    <header role="banner" className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur-md sm:px-6">
-      
-      {/* Mobile Drawer Trigger */}
-      <button 
-        type="button" 
-        onClick={toggleMobileNav} 
-        className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 lg:hidden"
-        aria-label="Toggle navigation view menu"
+    <header
+      role="banner"
+      className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur-md sm:px-6"
+    >
+      {/* Mobile Sidebar Hamburger Toggle Interface Trigger */}
+      <button
+        type="button"
+        onClick={toggleMobileNav}
+        aria-label="Open navigation menu"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 lg:hidden shrink-0"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       </button>
 
-      {/* Right-Aligned Identity Block Area */}
+      {/* Embedded Brand Identity (Visible during mid-tier responsive scaling) */}
+      <div className="hidden md:flex lg:hidden items-center gap-2 mr-2">
+        <span className="text-lg font-black text-purple-700">Eventvista</span>
+      </div>
+
+      {/* Global Application Context Workspace Search Module */}
+      <form role="search" className="hidden flex-1 max-w-md sm:block" onSubmit={handleSearchSubmit}>
+        <label htmlFor="global-search" className="sr-only">Search</label>
+        <div className="relative">
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+            <path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <input
+            id="global-search"
+            type="search"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search events, vendors..."
+            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 py-2 pl-9 pr-3 text-sm placeholder:text-neutral-400 focus:border-purple-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-100 transition-all"
+          />
+        </div>
+      </form>
+
+      {/* Primary Actions & User Interface Menu Blocks */}
       <div className="ml-auto flex items-center gap-4">
         
-        {isLoading ? (
-          // Content placeholder shell while network profile request finishes
-          <div className="h-9 w-28 animate-pulse rounded-full bg-neutral-100" />
-        ) : user ? (
+        {/* Real-time Notifications Popover System */}
+        <div 
+          className="relative"
+          onMouseEnter={() => setIsNotifOpen(true)}
+          onMouseLeave={() => setIsNotifOpen(false)}
+        >
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-purple-600 transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            {unreadCount > 0 && (
+              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white border-2 border-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
           
-          /* Interactive User Chip Component with Dropdown Menu */
-          <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-purple-100"
-              aria-expanded={dropdownOpen}
-              aria-haspopup="true"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 text-sm font-semibold text-purple-700">
+          {isNotifOpen && (
+            <div className="absolute right-0 w-80 pt-1.5 z-50">
+              <div className="bg-white border border-neutral-200 rounded-xl shadow-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100 bg-neutral-50/50">
+                  <p className="text-xs font-bold text-neutral-800">Notifications</p>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-xs text-neutral-400">You're all caught up.</p>
+                  ) : (
+                    notifications.map((n) => (
+                      <div key={n._id} className={`px-4 py-3 border-b border-neutral-50 last:border-0 ${!n.read ? "bg-purple-50/40" : "hover:bg-neutral-50"}`}>
+                        <p className="text-xs text-neutral-700">{n.message}</p>
+                        <p className="text-[10px] text-neutral-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Database Validated Identity Control Node */}
+        {!loading && user && (
+          <div 
+            className="relative"
+            onMouseEnter={() => setIsDropdownOpen(true)}
+            onMouseLeave={() => setIsDropdownOpen(false)}
+          >
+            {/* Context Trigger Avatar Card Block Row */}
+            <div className="flex items-center gap-3 border-l border-neutral-200 pl-4 cursor-pointer py-1 group select-none">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 text-sm font-bold text-purple-700 transition-transform group-hover:scale-105 shadow-sm border border-purple-200/50">
                 {getInitials(user.name)}
               </span>
-              <div className="hidden text-left leading-tight md:block mr-1">
-                <p className="text-sm font-semibold text-neutral-800">{user.name}</p>
-                <p className="text-xs text-neutral-500 capitalize">{user.role}</p>
+              <div className="hidden text-left leading-tight md:block">
+                <p className="text-sm font-semibold text-neutral-800 transition-colors group-hover:text-purple-700">
+                  {user.name || "Workspace Profile"}
+                </p>
+                <p className="text-xs font-medium text-neutral-400 capitalize">
+                  {user.role || "Client"}
+                </p>
               </div>
-              <svg 
-                className={`hidden h-4 w-4 text-neutral-400 transition-transform md:block ${dropdownOpen ? 'rotate-180' : ''}`} 
-                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            </div>
 
-            {/* Contextual Action Dropdown Overlay Card */}
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-neutral-200 bg-white p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-3 py-2 border-b border-neutral-100 md:hidden">
-                  <p className="text-sm font-semibold text-neutral-800 truncate">{user.name}</p>
-                  <p className="text-xs text-neutral-500 capitalize">{user.role}</p>
+            {/* Context Dropdown Menu Matrix Overlay */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 w-48 pt-2 z-50 animate-fadeIn">
+                <div className="bg-white border border-neutral-200 rounded-xl shadow-xl overflow-hidden flex flex-col p-1">
+                  <div className="px-3 py-2 border-b border-neutral-100 md:hidden">
+                    <p className="text-xs font-bold text-neutral-800 truncate">{user.name}</p>
+                    <p className="text-[10px] text-neutral-400 capitalize mt-0.5">{user.role}</p>
+                  </div>
+                  
+                  {/* Trimmed to exactly Account Settings & Sign Out */}
+                  <Link 
+                    href="/settings" 
+                    className="px-3 py-2 text-xs font-bold text-neutral-600 rounded-lg hover:bg-neutral-50 hover:text-purple-600 transition-colors"
+                  >
+                    Account Settings
+                  </Link>
+                  <div className="border-t border-neutral-100 my-1" />
+                  <button 
+                    type="button"
+                    onClick={handleSignOut}
+                    className="w-full px-3 py-2 text-xs font-bold text-red-600 text-left rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    Sign Out
+                  </button>
                 </div>
-                
-                <Link
-                  href="/settings"
-                  className="flex w-full items-center px-3 py-2 text-sm text-neutral-700 rounded-lg transition-colors hover:bg-neutral-50 hover:text-purple-600"
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  ⚙️ <span className="ml-2">Settings</span>
-                </Link>
-                
-                <hr className="my-1 border-neutral-100" />
-                
-                <button
-                  type="button"
-                  onClick={handleSignOutProcess}
-                  className="flex w-full items-center px-3 py-2 text-sm text-red-600 font-medium rounded-lg transition-colors hover:bg-red-50 text-left"
-                >
-                  🚪 <span className="ml-2">Sign Out</span>
-                </button>
               </div>
             )}
           </div>
-
-        ) : (
-          /* Unauthenticated/Public Access State Layout View */
-          <div className="flex gap-2">
-            <Link href="/login" className="rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 transition-colors">
-              Log In
-            </Link>
-            <Link href="/register" className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 transition-colors">
-              Sign Up
-            </Link>
-          </div>
         )}
-
+        
       </div>
     </header>
   );
