@@ -20,3 +20,4 @@ backend/config/firebase-service-account.json
 frontend/.env.local
 frontend/config/firebase.sdk
 .env
+backend
