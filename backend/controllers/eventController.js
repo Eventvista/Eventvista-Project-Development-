@@ -37,6 +37,22 @@ export const updateEvent = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, data: event });
 });
+export const addExpenseAllocation = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { category, budgeted, spent } = req.body;
+
+  const event = await Event.findById(id);
+  if (!event) throw new ApiError(404, "No event infrastructure record found.");
+
+  // Inject new record segment
+  event.budget.allocations.push({ category, budgeted, spent });
+
+  // Recalculate global aggregate sums to preserve SSOT data alignment
+  event.budget.spent = event.budget.allocations.reduce((sum, item) => sum + item.spent, 0);
+  
+  await event.save();
+  res.status(200).json({ success: true, data: event });
+});
 
 export const deleteEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;

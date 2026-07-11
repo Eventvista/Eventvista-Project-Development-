@@ -17,7 +17,14 @@ const eventSchema = new mongoose.Schema(
     budget: {
       total: { type: Number, default: 0 },
       spent: { type: Number, default: 0 },
-    },
+      allocations: [
+        {
+          category: { type: String, required: true },
+          budgeted: { type: Number, required: true },
+          spent: { type: Number, default: 0 },
+        }
+      ]
+    }
   },
   { timestamps: true }
 );
