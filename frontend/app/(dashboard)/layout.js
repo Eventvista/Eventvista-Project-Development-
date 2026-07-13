@@ -1,3 +1,4 @@
+// frontend/app/(dashboard)/layout.js
 // ==========================================
 // COMBINED FRONTEND ENTRY: app/(dashboard)/layout.js
 // ==========================================
