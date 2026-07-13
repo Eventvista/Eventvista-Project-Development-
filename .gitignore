@@ -21,3 +21,4 @@ frontend/.env.local
 frontend/config/firebase.sdk
 .env
 frontend/Navbar compiled scripts.txt
+frontend/app/(dashboard)/compiled page scripts for budget, guests, messages.txt
