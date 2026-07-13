@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuth } from "@/context/AuthContext";
+import { useEventContext } from "@/context/EventContext";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: "grid" },
@@ -81,6 +82,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { role } = useAuth();
   const { collapsed, toggleCollapsed, mobileNavOpen, toggleMobileNav } = useSidebar();
+  const { activeEventId } = useEventContext();
 
   return (
     <>
@@ -118,11 +120,17 @@ export default function Sidebar() {
               return null;
             }
 
+            // Append active eventId context parameter to preserve workspace sessions
+            const targetHref = activeEventId
+              ? `${item.href}?eventId=${activeEventId}`
+              : item.href;
+
             const active = pathname?.startsWith(item.href);
+
             return (
               <li key={item.href}>
                 <Link
-                  href={item.href}
+                  href={targetHref}
                   aria-current={active ? "page" : undefined}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200
                     ${
@@ -139,7 +147,30 @@ export default function Sidebar() {
           })}
         </ul>
 
-        <div className="border-t border-white/10 p-3">
+        {/* Sync Status Overlay Panel */}
+        <div className="border-t border-white/10 p-3 flex flex-col gap-2">
+          {/* Expanded Sidebar Sync Info */}
+          {!collapsed && (
+            <div className="px-3 py-2 rounded-lg bg-neutral-950/50 border border-white/5 text-xs text-neutral-400">
+              <div className="flex items-center gap-2">
+                <span className={`h-2 w-2 rounded-full ${activeEventId ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                <span className="truncate font-medium">
+                  {activeEventId ? `Active ID: ${activeEventId}` : "No Event Selected"}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Collapsed Sidebar Indicator Dot */}
+          {collapsed && (
+            <div 
+              className="flex justify-center py-1"
+              title={activeEventId ? `Active Event ID: ${activeEventId}` : "No Event Selected"}
+            >
+              <span className={`h-2.5 w-2.5 rounded-full ${activeEventId ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+            </div>
+          )}
+
           <button
             type="button"
             onClick={toggleCollapsed}
