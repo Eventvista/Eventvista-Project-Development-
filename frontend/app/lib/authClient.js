@@ -111,7 +111,6 @@ export async function signInWithGoogle() {
   let userCredential;
 
   try {
-<<<<<<< HEAD
     // Open the authentic modal overlay channel for user credentials[cite: 17]
     const result = await signInWithPopup(auth, googleProvider);
     const idToken = await result.user.getIdToken();
@@ -148,11 +147,9 @@ export async function signInWithGoogle() {
     // Fully hydrated profile found: persist session and pass metrics onward[cite: 17]
     persistAppSession(body.token, body.data);
     return { isNewUser: false, idToken, appToken: body.token, user: body.data };
-=======
     // 1. CRITICAL: Invoke popup synchronously at the top of the stack.
     // This satisfies strict browser security rules to prevent "auth/popup-blocked" errors.
     userCredential = await signInWithPopup(auth, googleProvider);
->>>>>>> feature/central-hub-routing
   } catch (error) {
     // 2. Catch popup blockages/user closures and fall back to redirect protocol
     if (
