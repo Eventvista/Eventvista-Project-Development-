@@ -25,7 +25,6 @@ import adminRoutes from './routes/adminRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 
-
 const app = express();
 
 /* ------------------------------------------------------------------ */
@@ -108,7 +107,7 @@ app.use('/api/v1/layouts', layoutRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/messages', messageRoutes);
-(app.use('/api/v1/notifications', notificationRoutes)),
+app.use('/api/v1/notifications', notificationRoutes); // Fixed broken syntax and trailing comma cleanly
 
 app.use(notFound);
 app.use(errorHandler);
