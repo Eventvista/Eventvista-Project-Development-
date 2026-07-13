@@ -3,15 +3,16 @@
  * @file frontend/app/login/page.js
  * @description Central authentication routing portal for Eventvista.
  * Integrates classic identity credential challenges with explicit live Firebase
- * Google Auth provider popups and backend profile verification checks.
+ * Google Auth provider popups, redirect recovery layers, and backend profile verification checks.
  */
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GoogleSignInButton, RoleSelectionModal } from "../components/GoogleAuthAndRoleSelect";
-import { signInWithGoogle, completeProfile } from "../lib/authClient";
+import { signInWithGoogle, completeProfile, handleRedirectCallback } from "../lib/authClient";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
@@ -24,6 +25,9 @@ const ALPHA_TESTERS = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  // Unified State Engine
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +43,48 @@ export default function LoginPage() {
   const [showAlphaModule, setShowAlphaModule] = useState(false);
 
   // =========================================================================
-  // SECTION 1: TRADITIONAL EMAIL / PASSWORD SECURITY CHALLENGE
+  // SECTION 1: REDIRECT RECOVERY MONITORING (ON-MOUNT CYCLE)
+  // =========================================================================
+  /**
+   * Catches user context upon returning to the app from a Google redirect flow.
+   * Resolves authentication pipelines for security-restricted environments[cite: 17].
+   */
+  useEffect(() => {
+    const verifyRedirectRecovery = async () => {
+      setGoogleLoading(true);
+      setError("");
+      try {
+        const result = await handleRedirectCallback();
+        if (!result) return; // No active redirect sequence in progress[cite: 17]
+
+        const userEmailLower = result.email?.toLowerCase() || "";
+
+        if (result.isNewUser) {
+          // Pristine registration state: Hold validation token and ask for platform role[cite: 17]
+          setPendingIdToken(result.idToken);
+          setShowRoleModal(true);
+        } else {
+          // Existing user instance verified via backend database schema
+          if (ALPHA_TESTERS.includes(userEmailLower)) {
+            setAuthenticatedEmail(userEmailLower);
+            setShowAlphaModule(true);
+          } else {
+            router.push("/dashboard"); // Safe, seamless navigation inside client dashboard[cite: 17]
+          }
+        }
+      } catch (err) {
+        console.error("Google cross-origin redirect verification failure:", err);
+        setError(err.message || "Failed to recover authentic session with the server[cite: 17].");
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    verifyRedirectRecovery();
+  }, [router]);
+
+  // =========================================================================
+  // SECTION 2: TRADITIONAL EMAIL / PASSWORD SECURITY CHALLENGE
   // =========================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,7 +109,7 @@ export default function LoginPage() {
           setAuthenticatedEmail((data.data.email || email).toLowerCase());
           setShowAlphaModule(true);
         } else {
-          window.location.href = "/dashboard";
+          router.push("/dashboard");
         }
       } else {
         setError(data.message || "Invalid credentials provided.");
@@ -77,30 +122,32 @@ export default function LoginPage() {
   };
 
   // =========================================================================
-  // SECTION 2: FIREBASE FEDERATED GOOGLE POPUP CHECKPOINT (SSOT LINK)
+  // SECTION 3: FIREBASE FEDERATED GOOGLE POPUP CHECKPOINT (SSOT LINK)
   // =========================================================================
   /**
-   * Spawns true identity popups and drops mock hardcoded timeouts[cite: 11].
-   * Defers new-vs-returning status evaluation parameters natively to MongoDB.
+   * Spawns identity popups and triggers fallback redirects on restricted browsers[cite: 11, 17].
+   * Defers new-vs-returning validation natively to MongoDB[cite: 17].
    */
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     setError("");
     try {
       const result = await signInWithGoogle();
+      if (!result) return; // Halt execution if transferring to a redirect flow[cite: 17]
+
       const userEmailLower = result.email?.toLowerCase() || "";
 
       if (result.isNewUser) {
-        // Pristine registration state: Hold token validation signature and request role
+        // Pristine registration state: Hold validation token and request role[cite: 17]
         setPendingIdToken(result.idToken);
         setShowRoleModal(true);
       } else {
-        // Existing user instance verified via backend aggregation logic
+        // Existing user instance verified via backend aggregation logic[cite: 17]
         if (ALPHA_TESTERS.includes(userEmailLower)) {
           setAuthenticatedEmail(userEmailLower);
           setShowAlphaModule(true);
         } else {
-          window.location.href = "/dashboard";
+          router.push("/dashboard");
         }
       }
     } catch (err) {
@@ -112,16 +159,16 @@ export default function LoginPage() {
   };
 
   // =========================================================================
-  // SECTION 3: NEW USER ROLE SELECTION & ADVISOR ONBOARDING FORWARDING
+  // SECTION 4: NEW USER ROLE SELECTION & ADVISOR ONBOARDING FORWARDING
   // =========================================================================
   /**
-   * Handles profile finalization for brand-new authenticated sessions.
-   * Routes first-time signups smoothly through the AI Advisor onboarding pipeline.
+   * Handles profile finalization for brand-new authenticated sessions[cite: 17].
+   * Routes first-time signups smoothly through the AI Advisor onboarding pipeline[cite: 17].
    */
   const handleRoleSelect = async (role, businessName) => {
     try {
       setError("");
-      const profile = await completeProfile({
+      await completeProfile({
         idToken: pendingIdToken,
         role,
         businessName,
@@ -129,8 +176,8 @@ export default function LoginPage() {
       
       setShowRoleModal(false);
       
-      // Send first-time registrations to build their first event project context before hitting dashboard
-      window.location.href = "/onboarding";
+      // Send first-time registrations to build their first event project context before hitting dashboard[cite: 17]
+      router.push("/onboarding");
     } catch (err) {
       console.error("Profile completion processing issue:", err);
       setError(err.message || "Could not save your account structural role configuration profile.");
@@ -231,13 +278,46 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Role Collection Modal Overlay Engine for first-time signups */}
+      {/* Role Collection Modal Overlay Engine for first-time signups[cite: 17] */}
       <RoleSelectionModal open={showRoleModal} onSelect={handleRoleSelect} />
       
       {/* Alpha testing panel re-injection module */}
       {showAlphaModule && (
         <AlphaTestingDashboard email={authenticatedEmail} onClose={() => setShowAlphaModule(false)} />
       )}
+    </div>
+  );
+}
+
+// =========================================================================
+// SECTION 5: ALPHA TESTING DIAGNOSTIC ACCESS MODULE
+// =========================================================================
+/**
+ * Internal diagnostics framework bypassed during baseline user redirection.
+ */
+function AlphaTestingDashboard({ email, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-neutral-100">
+        <h3 className="text-lg font-bold text-neutral-900">Alpha Diagnostics Platform</h3>
+        <p className="mt-2 text-sm text-neutral-500">
+          You have authenticated successfully as alpha tester: <strong className="text-purple-600">{email}</strong>
+        </p>
+        <div className="mt-6 flex flex-col gap-2">
+          <button 
+            onClick={() => { window.location.href = "/dashboard"; }}
+            className="w-full rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+          >
+            Proceed to App Dashboard
+          </button>
+          <button 
+            onClick={onClose}
+            className="w-full rounded-lg border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+          >
+            Close Panel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
