@@ -1,7 +1,14 @@
 // frontend/app/(dashboard)/messages/page.js
+/**
+ * @file frontend/app/(dashboard)/messages/page.js
+ * @description Consolidated messaging panel that retrieves thread payloads 
+ * using real-time search parameter state updates[cite: 18].
+ */
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 
 const CHANNELS = [
@@ -12,24 +19,26 @@ const CHANNELS = [
 ];
 
 export default function MessagesPage() {
+  const searchParams = useSearchParams();
+
+  // Derive active context directly from routing query strings
+  const activeEventId = searchParams.get("eventId") || "";
+
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
-  const [activeEventId, setActiveEventId] = useState("");
   const [recipient, setRecipient] = useState("Vendor Channel");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
-  // Rehydrate channel configuration and context on mount
+  // Synchronously reload thread payload when changing targeted events
   useEffect(() => {
-    const storedEventId = localStorage.getItem("activeEventId");
-    if (storedEventId) {
-      setActiveEventId(storedEventId);
-      fetchMessages(storedEventId);
+    if (activeEventId) {
+      fetchMessages(activeEventId);
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [activeEventId]);
 
   // Automatically scroll viewport to newest updates
   useEffect(() => {
@@ -38,6 +47,7 @@ export default function MessagesPage() {
 
   const fetchMessages = async (eventId) => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/v1/messages/${eventId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -199,9 +209,6 @@ export default function MessagesPage() {
 
         {/* Message Writeback Submission Form */}
         <form onSubmit={handleSend} className="border-t border-neutral-200 p-4 bg-white flex gap-3 items-center">
-          <label htmlFor="message-input" className="sr-only">
-            Type secure coordination message
-          </label>
           <input
             id="message-input"
             type="text"
