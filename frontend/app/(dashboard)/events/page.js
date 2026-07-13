@@ -1,4 +1,10 @@
 // frontend/app/(dashboard)/events/page.js
+/**
+ * @file frontend/app/(dashboard)/events/page.js
+ * @description Events landing matrix utilizing normalized database entities to provide
+ * clean interface sorting, query matching, and identity tracking.
+ */
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -7,7 +13,6 @@ import SearchBar from "@/components/molecules/SearchBar";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-
 
 export default function EventsPage() {
   const [query, setQuery] = useState("");
@@ -26,7 +31,12 @@ export default function EventsPage() {
         });
         const data = await res.json();
         if (data.success) {
-          setEvents(data.data);
+          // Normalize retrieved records immediately to resolve the id schema gap
+          const normalizedEvents = data.data.map((event) => ({
+            ...event,
+            id: event.id || event._id // Map MongoDB raw primary identifier to standard frontend id
+          }));
+          setEvents(normalizedEvents);
         } else {
           setError(data.message || "Failed to fetch events");
         }
@@ -46,7 +56,8 @@ export default function EventsPage() {
 
   const columns = [
     {
-      key: "title", label: "Event Name",
+      key: "title", 
+      label: "Event Name",
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-600 font-bold">
@@ -61,7 +72,8 @@ export default function EventsPage() {
     { key: "guestCount", label: "Guests" },
     { key: "status", label: "Status", render: (row) => <Badge status={row.layout ? "confirmed" : "planning"} /> },
     {
-      key: "action", label: "Action",
+      key: "action", 
+      label: "Action",
       render: () => (
         <button className="text-neutral-400 hover:text-neutral-700 text-lg font-bold">···</button>
       ),
@@ -73,10 +85,10 @@ export default function EventsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dashboard">
-          <Button variant="secondary" className="px-3 py-1.5 text-xs">← Back to Dashboard</Button>
+            <Button variant="secondary" className="px-3 py-1.5 text-xs">← Back to Dashboard</Button>
           </Link>        
           <h1 className="text-2xl font-bold text-neutral-900">Events</h1>
-          </div>
+        </div>
         <Button>+ New Event</Button>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

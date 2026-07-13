@@ -1,4 +1,10 @@
 // frontend/components/molecules/DataTable.js
+/**
+ * @file frontend/components/molecules/DataTable.js
+ * @description Defensive data table component configured with safe unique identity keys
+ * to prevent Virtual DOM misalignments under React 19 and Turbopack hot-reloading.
+ */
+
 export default function DataTable({ columns, rows, caption }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm">
@@ -18,9 +24,10 @@ export default function DataTable({ columns, rows, caption }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <tr
-              key={row.id}
+              // Robust fallback key chain: checks for standard id, then MongoDB _id, and falls back to loop index
+              key={row.id || row._id || `row-${index}`}
               className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50 transition-colors duration-150"
             >
               {columns.map((col) => (

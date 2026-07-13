@@ -3,8 +3,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 export const metadata = {
-  title: "Eventvista",
-  description: "Modern event management platform",
+  title: "Eventvista | Plan, Manage, Celebrate",
+  description: "Modern event management platform that helps you organize events seamlessly.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body className="bg-neutral-50 text-neutral-900 antialiased">
         <AuthProvider>
           {children}
         </AuthProvider>

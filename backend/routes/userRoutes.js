@@ -2,10 +2,11 @@
 import express from 'express';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import { verifyFirebaseToken } from '../middleware/firebaseAuth.js';
-import { 
-  getCurrentUser, 
+import {
+  getCurrentUser,
+  updateCurrentUser,
   getAllUsers,
-  updateUserRole 
+  updateUserRole,
 } from '../controllers/userController.js';
 import { completeProfile } from '../controllers/authController.js';
 
@@ -16,6 +17,7 @@ router.post('/complete-profile', verifyFirebaseToken, completeProfile);
 
 // Core infrastructure methods
 router.get('/me', protect, getCurrentUser);
+router.put('/me', protect, updateCurrentUser); // ADDED — Settings page was calling a route that didn't exist
 
 // Admin-restricted routes
 router.get('/', protect, authorize('admin'), getAllUsers);

@@ -73,6 +73,7 @@ export default function LandingPage() {
                 Start Planning for Free
               </Link>
 
+              {/* The "Redirect" to Login is now safely handled via this user interaction */}
               <Link 
                 href="/login" 
                 className="flex w-full items-center justify-center rounded-xl border border-neutral-200 py-2.5 text-xs font-semibold text-neutral-700 transition-colors duration-200 hover:bg-neutral-50"

@@ -20,4 +20,9 @@ backend/config/firebase-service-account.json
 frontend/.env.local
 frontend/config/firebase.sdk
 .env
+<<<<<<< HEAD
 backend
+=======
+frontend/Navbar compiled scripts.txt
+frontend/app/(dashboard)/compiled page scripts for budget, guests, messages.txt
+>>>>>>> feature/central-hub-routing

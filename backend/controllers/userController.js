@@ -44,6 +44,32 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route   PUT /api/v1/users/me
+ * @desc    Updates the authenticated user's own editable profile fields.
+ *          `email` is deliberately excluded — it's the identity key tied to
+ *          Firebase/JWT auth and isn't user-editable from this endpoint.
+ *          `role` is deliberately excluded — role changes only happen via
+ *          the admin-only PUT /users/role endpoint, never self-service.
+ * @access  Private
+ */
+export const updateCurrentUser = asyncHandler(async (req, res) => {
+  const { name, phone } = req.body;
+
+  const updates = {};
+  if (typeof name === 'string' && name.trim()) updates.name = name.trim();
+  if (typeof phone === 'string') updates.phone = phone.trim();
+
+  const user = await User.findByIdAndUpdate(req.user._id, updates, {
+    new: true,
+    runValidators: true,
+  }).select('-password');
+
+  if (!user) throw new ApiError(404, 'User not found.');
+
+  res.status(200).json({ success: true, data: user });
+});
+
+/**
  * @route   GET /api/v1/users
  * @desc    Retrieves all registered platform users.
  * @access  Private (Admin Only)
@@ -60,17 +86,17 @@ export const getAllUsers = asyncHandler(async (req, res) => {
  */
 export const updateUserRole = asyncHandler(async (req, res) => {
   const { userId, newRole } = req.body;
-  
+
   if (!['organiser', 'vendor', 'admin'].includes(newRole)) {
     throw new ApiError(400, 'Invalid role assignment provided.');
   }
 
   const user = await User.findByIdAndUpdate(
-    userId, 
-    { role: newRole }, 
+    userId,
+    { role: newRole },
     { new: true, runValidators: true }
   ).select('-password');
-  
+
   if (!user) throw new ApiError(404, 'User not found.');
 
   res.status(200).json({ success: true, data: user });
