@@ -7,6 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import StatCard from "@/components/molecules/StatCard";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import { useEventContext } from "@/context/EventContext";
 
 const MOCK_STATS = [
   { label: "Total Events", value: "3", sublabel: "All time records" },
