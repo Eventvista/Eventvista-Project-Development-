@@ -1,4 +1,3 @@
-// frontend/app/register/page.js
 "use client";
 
 import { useState } from "react";
@@ -14,18 +13,39 @@ export default function RegisterPage() {
     confirmPassword: "",
     role: "organiser",
   });
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    window.location.href = "/dashboard";
+    setError("");
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:5000/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          role: form.role,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Registration failed.");
+        return;
+      }
+      localStorage.setItem("token", data.token);
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setError("Could not reach the server. Is the backend running?");
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -39,40 +59,13 @@ export default function LoginPage() {
   const handleRoleSelect = async (role) => {
     // TODO (John): write `role` to this user's Firestore doc
     setShowRoleModal(false);
-    
-    setError("");
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("/api/v1/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          role: form.role
-        })
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        localStorage.setItem("token", data.token);
-        window.location.href = "/dashboard";
-      } else {
-        setError(data.message || "Registration failed");
-      }
-    } catch (err) {
-      setError("Failed to connect to the server.");
-    } finally {
-      setIsLoading(false);
-    }
+    window.location.href = "/dashboard";
   };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
       <div className="flex w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-floating">
+
+        {/* Left side */}
         <div className="hidden flex-1 flex-col justify-between bg-purple-50 p-10 lg:flex">
           <div className="flex items-center gap-2">
             <span className="h-6 w-6 rounded-full bg-purple-600" />
@@ -80,39 +73,62 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-neutral-900">
-              Plan. Manage. <span className="text-purple-600">Celebrate.</span>
+              Let&apos;s Get{" "}
+              <span className="text-purple-600">Started!</span>
             </h1>
             <p className="mt-3 text-sm text-neutral-500">
-              Eventvista helps you organise events seamlessly and create
-              unforgettable experiences.
+              Create an account and start planning amazing events with Eventvista
             </p>
           </div>
-          <div className="mt-8 flex-1 overflow-hidden rounded-xl">
-            <img src="/images/registration photo.jpeg" alt="Event celebration" className="h-full w-full object-cover" />
+          <div className="hidden lg:flex flex-1 flex-col bg-purple-50 p-10">
+            <div className="flex items-center gap-2">
+              <span className="h-6 w-6 rounded-full bg-purple-600" />
+              <span className="text-lg font-bold text-neutral-900">
+                Eventvista
+              </span>
+            </div>
+
+            <div className="mt-12">
+              <h1 className="text-3xl font-bold">
+                Let's Get <span className="text-purple-600">Started!</span>
+              </h1>
+
+              <p className="mt-3 text-neutral-500">
+                Create an account and start planning amazing events with Eventvista.
+              </p>
+            </div>
+
+            <div className="mt-8 flex-1 overflow-hidden rounded-xl">
+              <img
+                src="/images/registration photo.jpeg"
+                alt="Event celebration"
+                className="h-full w-full object-cover"
+              />
+            </div>
           </div>
-         <div className="mt-8 flex-1 overflow-hidden rounded-2xl">
-  <img
-    src="/images/login photo.jpeg"
-    alt="Event planning"
-    className="w-full h-full object-contain"
-  />
-</div>
         </div>
 
+        {/* Right side */}
         <div className="flex flex-1 flex-col justify-center p-8 lg:p-12">
           <div className="mx-auto w-full max-w-sm">
-            <h2 className="text-2xl font-bold text-neutral-900">Create Your Account</h2>
-            <p className="mt-1 text-sm text-neutral-500">Fill in the details below to get started</p>
-
-            {error && <div className="mt-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</div>}
-            <h2 className="text-2xl font-bold text-neutral-900">Welcome Back!</h2>
+            <h2 className="text-2xl font-bold text-neutral-900">
+              Create Your Account
+            </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              Sign in to continue to your account
+              Fill in the details below to get started
             </p>
+
+            {error && (
+              <div className="mt-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Full Name</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Full Name
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">👤</span>
                   <input
@@ -126,17 +142,16 @@ export default function LoginPage() {
                 </div>
               </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Email Address</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Email Address
+                </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-                    ✉
-                  </span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">✉</span>
                   <input
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder="Enter your email"
                     required
                     className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
@@ -145,7 +160,67 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Role</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">📞</span>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="Enter your phone number"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Password
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">🔒</span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="Create a password"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-10 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400"
+                  >
+                    {showPassword ? "🙈" : "👁"}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">🔒</span>
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    placeholder="Confirm your password"
+                    required
+                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700">
+                  Role
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">👤</span>
                   <select
@@ -155,65 +230,15 @@ export default function LoginPage() {
                   >
                     <option value="organiser">Organiser</option>
                     <option value="vendor">Vendor</option>
-                    <option value="admin">Admin</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Password</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-                    🔒
-                  </span>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                    className="w-full rounded-lg border border-neutral-200 py-2.5 pl-9 pr-10 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                  >
-                    {showPassword ? "🙈" : "👁"}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700">Confirm Password</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">🔒</span>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-neutral-600">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="rounded border-neutral-300 accent-purple-600"
-                  />
-                </div>
-              </div>
-                  Remember Me
-                </label>
-                <button
-                  type="button"
-                  className="text-sm font-medium text-purple-600 hover:underline"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-purple-700 disabled:opacity-70"
+                className="w-full rounded-lg bg-purple-600 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-purple-700"
               >
-                {isLoading ? "CREATING ACCOUNT..." : "LOGIN"}
+                CREATE ACCOUNT
               </button>
 
               <div className="relative flex items-center gap-3">
@@ -225,16 +250,13 @@ export default function LoginPage() {
               <GoogleSignInButton onClick={handleGoogleSignIn} loading={googleLoading} />
 
               <p className="text-center text-sm text-neutral-500">
-                Don&apos;t have an account?{" "}
-                <Link href="/register" className="font-semibold text-purple-600 hover:underline">Sign Up</Link>
+                Already have an account?{" "}
+                <Link href="/login" className="font-semibold text-purple-600 hover:underline">
+                  Login
+                </Link>
               </p>
             </form>
           </div>
-          {/*
-          <p className="mt-8 text-center text-xs text-neutral-400">
-            2024 Eventvista. All rights reserved.
-          </p>
-*/}
         </div>
       </div>
 

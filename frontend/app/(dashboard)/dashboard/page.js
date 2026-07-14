@@ -57,7 +57,11 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-neutral-900">Welcome back, John 👋</h1>
           <p className="text-sm text-neutral-500">Here&apos;s what&apos;s happening with your events.</p>
         </div>
-        <Button>+ Create New Event</Button>
+        <Link href="/events/create">
+  <Link href="/designer">
+  <Button>+ Create New Event</Button>
+</Link>
+</Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -1,8 +1,9 @@
-// frontend/app/login/page.js
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../../lib/firebase";
 import { GoogleSignInButton, RoleSelectionModal } from "./GoogleAuthAndRoleSelect";
 
 export default function LoginPage() {
@@ -19,39 +20,51 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const res = await fetch("http://localhost:5000/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
-      
       const data = await res.json();
-      
-      if (data.success) {
-        localStorage.setItem("token", data.token);
-        window.location.href = "/dashboard";
-      } else {
-        setError(data.message || "Invalid credentials");
+      if (!res.ok) {
+        setError(data.message || "Invalid email or password.");
+        return;
       }
+      localStorage.setItem("token", data.token);
+      window.location.href = "/dashboard";
     } catch (err) {
-      setError("Failed to connect to the server.");
+      setError("Could not reach the server. Is the backend running?");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    setError("");
     setGoogleLoading(true);
-    // TODO (John): real signInWithPopup(auth, googleProvider) call goes here,
-    // then check Firestore — if user has no role yet, open the modal.
-    setGoogleLoading(false);
-    setShowRoleModal(true); // temporary, until John's real check replaces this
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      const existingRole = localStorage.getItem(`role_${firebaseUser.uid}`);
+
+      if (!existingRole) {
+        setShowRoleModal(true);
+      } else {
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      setError("Google sign-in failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleRoleSelect = async (role) => {
-    // TODO (John): write `role` to this user's Firestore doc
+    const firebaseUser = auth.currentUser;
+    if (firebaseUser) {
+      localStorage.setItem(`role_${firebaseUser.uid}`, role);
+    }
     setShowRoleModal(false);
     window.location.href = "/dashboard";
   };
@@ -132,9 +145,9 @@ export default function LoginPage() {
                   />
                   Remember Me
                 </label>
-                <button type="button" className="text-sm font-medium text-purple-600 hover:underline">
+                <Link href="/forgot-password" className="text-sm font-medium text-purple-600 hover:underline">
                   Forgot Password?
-                </button>
+                </Link>
               </div>
 
               <button
@@ -151,10 +164,6 @@ export default function LoginPage() {
                 <div className="flex-1 border-t border-neutral-200" />
               </div>
 
-              <button type="button" className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 py-3 text-sm font-medium text-neutral-700 transition-colors duration-200 hover:bg-neutral-50">
-                <span className="text-lg">G</span>
-                Continue with Google
-              </button>
               <GoogleSignInButton onClick={handleGoogleSignIn} loading={googleLoading} />
 
               <p className="text-center text-sm text-neutral-500">
