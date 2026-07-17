@@ -52,13 +52,10 @@ function persistAppSession(appToken, user) {
 // =========================================================================
 
 /**
-<<<<<<< HEAD
  * Spawns the authentic Google Provider popup view, captures identity metrics,
  * and passes verification tokens downstream to determine signup state logic.[cite: 17]
-=======
  * Validates a Firebase ID token against the centralized Eventvista authentication endpoint.
  * Handles parsing fallbacks gracefully in the event of upstream network failures.
->>>>>>> feature/central-hub-routing
  * 
  * @param {string} idToken - The raw decoded Firebase Identity Token.
  * @returns {Promise<{ isNewUser: boolean, idToken: string, email: string, firebaseUid?: string, appToken?: string, user?: object }>}
