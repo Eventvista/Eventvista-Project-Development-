@@ -1,4 +1,3 @@
-// backend/models/Event.js
 import mongoose from 'mongoose';
 
 const eventSchema = new mongoose.Schema(
@@ -24,6 +23,17 @@ const eventSchema = new mongoose.Schema(
           spent: { type: Number, default: 0 },
         }
       ]
+    },
+    bookedVendors: [
+      {
+        vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+        bookedAt: { type: Date, default: Date.now }
+      }
+    ],
+    latestAdvisoryPlan: {
+      prompt: { type: String },
+      plan: { type: String },
+      generatedAt: { type: Date }
     }
   },
   { timestamps: true }
