@@ -1,37 +1,46 @@
-// frontend/components/layout/Navbar.js
+/**
+ * @file frontend/components/layout/Navbar.js
+ * @description Unified global header tracking active user sessions, environment badging,
+ * localized search context queries, background notification polling, and the master project scope selector.
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSidebar } from "@/context/SidebarContext";
+import { useEventContext } from "@/context/EventContext"; // Method 1 Pipeline Hook
 import { auth } from "@/config/firebase";
 import { signOut } from "firebase/auth";
 
 export default function Navbar() {
-  const { toggleMobileNav } = useSidebar();
-  const router = useRouter();
+  const { toggleMobileNav } = useSidebar(); // Method 2 Hook[cite: 16]
+  const router = useRouter(); // Method 2 Hook[cite: 16]
+  
+  // Method 1: Global Context Subscriptions
+  const { activeEventId, updateActiveEvent, events } = useEventContext();
 
-  // Core State Engine (Single Source of Truth)
+  // Method 2: Core Identity & Runtime State Engine[cite: 16]
   const [user, setUser] = useState(null);
   const [isDemo, setIsDemo] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Notification Architecture States
+  // Method 2: Notification Architecture States[cite: 16]
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
-  // 1. Session Rehydration & Sandbox Environment Interception
+  // 1. Session Rehydration & Sandbox Environment Interception[cite: 16]
   useEffect(() => {
     const initializeSessionContext = async () => {
       const demoState = localStorage.getItem("eventvista_demo_mode") === "true";
       setIsDemo(demoState);
 
       if (demoState) {
-        // Populate local state instantly with sandboxed mock credentials
+        // Populate local state instantly with sandboxed mock credentials[cite: 16]
         setUser({ 
           name: "Demo Planner", 
           role: "organiser", 
@@ -39,7 +48,7 @@ export default function Navbar() {
         });
         setLoading(false);
       } else {
-        // Rehydrate a standard live user session from the MongoDB instance
+        // Rehydrate a standard live user session from the MongoDB instance[cite: 16]
         const token = localStorage.getItem("token");
         if (!token) {
           setLoading(false);
@@ -65,10 +74,10 @@ export default function Navbar() {
     initializeSessionContext();
   }, []);
 
-  // 2. Dual-Mode Notification Syncing & Background Polling Engine
+  // 2. Dual-Mode Notification Syncing & Background Polling Engine[cite: 16]
   useEffect(() => {
     if (isDemo) {
-      // Inject mock payload notifications to simulate active platform interactions
+      // Inject mock payload notifications to simulate active platform interactions[cite: 16]
       setNotifications([
         { 
           _id: "mock-notif-1", 
@@ -87,7 +96,7 @@ export default function Navbar() {
       return;
     }
 
-    // Connect and read from live server endpoints if operating outside sandbox boundaries
+    // Connect and read from live server endpoints if operating outside sandbox boundaries[cite: 16]
     const fetchNotifications = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
@@ -107,11 +116,11 @@ export default function Navbar() {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Background polling loop every 30s
+    const interval = setInterval(fetchNotifications, 30000); // Background polling loop every 30s[cite: 16]
     return () => clearInterval(interval);
   }, [isDemo]);
 
-  // Global Notification State Actions
+  // Global Notification State Actions[cite: 16]
   const handleMarkAllRead = async () => {
     if (isDemo) {
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -132,7 +141,7 @@ export default function Navbar() {
     }
   };
 
-  // Search Context Form Controller
+  // Search Context Form Controller[cite: 16]
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     const query = searchValue.trim();
@@ -140,24 +149,24 @@ export default function Navbar() {
     router.push(`/events?q=${encodeURIComponent(query)}`);
   };
 
-  // Sandbox Mode Activation Route Trigger
+  // Sandbox Mode Activation Route Trigger[cite: 16]
   const handleLaunchDemo = () => {
     localStorage.setItem("eventvista_demo_mode", "true");
-    window.location.href = "/demo/dashboard"; // Clean reload establishes sandbox configurations
+    window.location.href = "/demo/dashboard"; // Clean reload establishes sandbox configurations[cite: 16]
   };
 
-  // Sandbox Mode Environment Teardown
+  // Sandbox Mode Environment Teardown[cite: 16]
   const handleExitDemo = () => {
     localStorage.removeItem("eventvista_demo_mode");
-    window.location.href = "/"; // Route user cleanly back to live marketing infrastructure
+    window.location.href = "/"; // Route user cleanly back to live marketing infrastructure[cite: 16]
   };
 
-  // Multi-Tier Identity Token Sign-Out Sequence
+  // Multi-Tier Identity Token Sign-Out Sequence[cite: 16]
   const handleSignOut = async () => {
     try {
-      await signOut(auth); // Disconnect live edge token instances via Firebase Provider
-      localStorage.removeItem("token"); // Purge client authorization signatures
-      router.push("/"); // Direct user back to root landing page
+      await signOut(auth); // Disconnect live edge token instances via Firebase Provider[cite: 16]
+      localStorage.removeItem("token"); // Purge client authorization signatures[cite: 16]
+      router.push("/"); // Direct user back to root landing page[cite: 16]
     } catch (error) {
       console.error("Session termination execution pipeline fault:", error);
     }
@@ -177,7 +186,7 @@ export default function Navbar() {
       role="banner"
       className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur-md sm:px-6"
     >
-      {/* Mobile Sidebar Hamburger Toggle */}
+      {/* Mobile Sidebar Hamburger Toggle[cite: 16] */}
       <button
         type="button"
         onClick={toggleMobileNav}
@@ -189,7 +198,7 @@ export default function Navbar() {
         </svg>
       </button>
 
-      {/* Brand & Mode Badging */}
+      {/* Brand & Mode Badging[cite: 16] */}
       <div className="flex items-center gap-3 mr-2">
         <Link href="/" className="text-xl font-black tracking-tight text-purple-700">
           Eventvista
@@ -201,8 +210,8 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Global Search Interface */}
-      <form role="search" className="hidden flex-1 max-w-md sm:block" onSubmit={handleSearchSubmit}>
+      {/* Global Search Interface[cite: 16] */}
+      <form role="search" className="hidden flex-1 max-w-sm md:block" onSubmit={handleSearchSubmit}>
         <label htmlFor="global-search" className="sr-only">Search events, vendors, configurations</label>
         <div className="relative">
           <svg
@@ -225,10 +234,30 @@ export default function Navbar() {
         </div>
       </form>
 
-      {/* Action Control Deck */}
-      <div className="ml-auto flex items-center gap-4">
+      {/* Action Control Deck[cite: 16] */}
+      <div className="ml-auto flex items-center gap-3 sm:gap-4">
+        
+        {/* Method 1: Global SSOT Pipeline Dropdown Selector */}
+        <div className="flex items-center">
+          <label htmlFor="global-event-selector" className="sr-only">
+            Active Event Context
+          </label>
+          <select
+            id="global-event-selector"
+            value={activeEventId}
+            onChange={(e) => updateActiveEvent(e.target.value)}
+            className="w-40 sm:w-56 md:w-64 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs sm:text-sm font-semibold text-neutral-700 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100 transition-colors"
+          >
+            <option value="" disabled>Select active event...</option>
+            {events.map((evt) => (
+              <option key={evt._id || evt.id} value={evt._id || evt.id}>
+                {evt.title}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        {/* Notifications Popover */}
+        {/* Notifications Popover[cite: 16] */}
         <div
           className="relative"
           onMouseEnter={() => setIsNotifOpen(true)}
@@ -297,10 +326,10 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* User Identity Controller Split */}
+        {/* User Identity Controller Split[cite: 16] */}
         {!loading && (
           user ? (
-            /* Authenticated Component */
+            /* Authenticated Profile Configuration Dropdown[cite: 16] */
             <div
               className="relative"
               onMouseEnter={() => setIsDropdownOpen(true)}
@@ -363,7 +392,7 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            /* Unauthenticated Visitor Options */
+            /* Unauthenticated Visitor Link Backings[cite: 16] */
             <div className="flex items-center gap-3 pl-2 border-l border-neutral-200">
               <button 
                 type="button"
