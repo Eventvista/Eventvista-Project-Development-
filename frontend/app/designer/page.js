@@ -1,21 +1,20 @@
-// frontend/app/designer/page.js
 /**
  * @file frontend/app/designer/page.js
  * @description Interactive 3D Venue Spatial Layout Designer for Eventvista.
  * Integrates dynamic canvas coordinate state arrays with the TRELLIS 3D machine learning mesh model
- * and real-time advisory plan persistence powered by Groq LLM pipelines[cite: 9].
+ * and real-time advisory plan persistence powered by Groq LLM pipelines.
  */
 
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-// Base gateway API path derived from system environments
+// Base gateway API path derived from system environments[cite: 15]
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
-// Asset catalogs mapped to graphical UI emojis
+// Asset catalogs mapped to graphical UI emojis[cite: 15]
 const ASSETS = {
   tables: [
     { id: "round-table", label: "Round Table", emoji: "🟤" },
@@ -26,17 +25,18 @@ const ASSETS = {
 };
 
 function DesignerContent() {
-  // FIX: Dynamically resolves event identification across shared routes by parsing URL patterns
-  // instead of anchoring state changes onto static placeholder variables[cite: 9].
+  // Resolves event identification across shared routes by parsing URL search queries[cite: 15]
   const searchParams = useSearchParams();
   const eventId = searchParams.get("eventId");
 
+  // Local Spatial Workspace States[cite: 15]
   const [activeTab, setActiveTab] = useState("tables");
   const [placed, setPlaced] = useState([]);
   const [selected, setSelected] = useState(null);
   const [processingImage, setProcessingImage] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
+  // Floating AI Advisor Panel States[cite: 15]
   const [showAdvisor, setShowAdvisor] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [advisorPlan, setAdvisorPlan] = useState("");
@@ -44,7 +44,8 @@ function DesignerContent() {
   const [advisorError, setAdvisorError] = useState("");
 
   /**
-   * Helper function compiling internal authorization token strings
+   * Helper function compiling localized JWT strings for secure cross-origin requests[cite: 15]
+   * @returns {Object} Target authorization header dictionary map
    */
   const authHeaders = () => {
     const token = localStorage.getItem("token");
@@ -81,15 +82,22 @@ function DesignerContent() {
           body: JSON.stringify({
             eventId,
             imageBase64: base64String,
+            // FIX: Reverted to an Array. The structural validation requirements must be met for the backend API[cite: 15].
+            // Stringification to resolve downstream Groq parsing errors is now handled on the backend[cite: 15].
             itemRequests: [{ objectId: "initial-setup", description: "Standard spatial planning matrix" }],
           }),
         });
 
         const pipelineResult = await response.json();
         
-        // FIX: Replaces silent hardcoded UI asset fallbacks with descriptive backend exception patterns
         if (!response.ok || !pipelineResult.success) {
-          throw new Error(pipelineResult.message || "The 3D generation pipeline did not return a valid layout structure.");
+          // Intercept raw backend/Groq parsing errors and translate them into user-friendly UI messages[cite: 15].
+          const isGroqParseError = pipelineResult.message?.includes("boundary-parsing");
+          const safeErrorMessage = isGroqParseError 
+            ? "The AI engine could not process the image format. Please ensure it's a clear photo and try again."
+            : (pipelineResult.message || "The 3D generation pipeline did not return a valid layout structure.");
+            
+          throw new Error(safeErrorMessage);
         }
 
         const objects = pipelineResult.layoutData.objects || [];
@@ -116,7 +124,7 @@ function DesignerContent() {
   // SECTION 2: COMPREHENSIVE STRATEGY ADVISOR PLAN GENERATION
   // =========================================================================
   /**
-   * Dispatches event prompt details to Groq LLM orchestration endpoints for direct DB persistence.
+   * Dispatches event prompt details to Groq LLM orchestration endpoints for direct DB persistence[cite: 15].
    */
   const handleExecuteAdvisorPrompt = async (e) => {
     e.preventDefault();
@@ -131,7 +139,6 @@ function DesignerContent() {
     setAdvisorError("");
     
     try {
-      // FIX: Replaces mock setTimeout windows with production server synchronization routes
       const res = await fetch(`${API_BASE}/ai/advisor-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -277,7 +284,7 @@ function DesignerContent() {
   );
 }
 
-// Next.js page boundary wrapping using Suspense to handle dynamic search param rehydration paths safely
+// Next.js page boundary wrapping using Suspense to handle dynamic search param rehydration paths safely[cite: 15]
 export default function DesignerPage() {
   return (
     <Suspense fallback={<div className="p-8 text-sm font-medium text-neutral-400 bg-neutral-900 h-screen animate-pulse">Loading designer workspace parameters...</div>}>
