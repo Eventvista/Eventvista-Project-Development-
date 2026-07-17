@@ -60,8 +60,9 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
   const event = await Event.findById(eventId);
   if (!event) throw new ApiError(404, `No event found with id ${eventId}.`);
 
-  if (String(event.owner) !== String(req.user._id) && req.user.role !== 'admin') {
-    throw new ApiError(403, 'You do not have administrative permission to modify this event layout.');
+  // FIX: Change event.owner to event.organiser to match the Event schema
+  if (String(event.organiser) !== String(req.user._id) && req.user.role !== 'admin') {
+    throw new ApiError(403, 'Access denied. You do not own this event.');
   }
 
   const pipelineResult = await runFullAIPipeline(imageBase64, itemRequests);
@@ -167,8 +168,9 @@ export const generateAdvisoryPlan = asyncHandler(async (req, res) => {
   const event = await Event.findById(eventId);
   if (!event) throw new ApiError(404, `No event found with matching id ${eventId}.`);
   
-  if (String(event.owner) !== String(req.user._id) && req.user.role !== 'admin') {
-    throw new ApiError(403, 'You do not have access authorization to query metrics for this event.');
+  // FIX: Change event.owner to event.organiser to match the Event schema
+  if (String(event.organiser) !== String(req.user._id) && req.user.role !== 'admin') {
+    throw new ApiError(403, 'Access denied. You do not own this event.');
   }
 
   const layout = await Layout.findOne({ event: eventId });
