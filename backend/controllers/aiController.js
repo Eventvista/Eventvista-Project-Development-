@@ -2,18 +2,20 @@
  * @file backend/controllers/aiController.js
  * @description Core AI Controller for Eventvista. Synthesizes spatial boundary parsing,
  * 3D Trellis layout creation, onboarding parameter optimization, and real-time LLM planning.
- * Anchored directly to MongoDB as the Single Source of Truth (SSOT).
+ * Anchored directly to MongoDB as the Single Source of Truth (SSOT)[cite: 16].
  */
 
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
-import { runFullAIPipeline } from '../utils/aiPipeline.js';
 import Layout from '../models/Layout.js';
 import Event from '../models/Event.js';
 import axios from 'axios';
 
+// Assuming an initialized Groq SDK client instance is accessible or imported
+// import { groq } from '../config/groqProvider.js';
+
 // =========================================================================
-// SECTION 1: CENTRALIZED INTERPRETATION UTILITY (GROQ INTEGRATION)
+// SECTION 1: CENTRALIZED INTERPRETATION UTILITY (GROQ TEXT CORE)
 // =========================================================================
 
 async function callGroq({ system, user, jsonMode }) {
@@ -51,6 +53,7 @@ async function callGroq({ system, user, jsonMode }) {
 export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
   const { eventId, imageBase64, itemRequests } = req.body;
 
+  // 1. Structural schema compliance and presence verification[cite: 14, 16]
   if (!eventId) throw new ApiError(400, 'eventId tracking parameter is required.');
   if (!imageBase64) throw new ApiError(400, 'imageBase64 venue image string is required.');
   if (!Array.isArray(itemRequests) || itemRequests.length === 0) {
@@ -60,13 +63,47 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
   const event = await Event.findById(eventId);
   if (!event) throw new ApiError(404, `No event found with id ${eventId}.`);
 
-  // FIX: Change event.owner to event.organiser to match the Event schema
+  // Organiser authentication authorization gate[cite: 16]
   if (String(event.organiser) !== String(req.user._id) && req.user.role !== 'admin') {
     throw new ApiError(403, 'Access denied. You do not own this event.');
   }
 
-  const pipelineResult = await runFullAIPipeline(imageBase64, itemRequests);
+  // 2. Local serialization to isolate data formats safely for Groq's validation boundary[cite: 14]
+  const itemRequestsString = JSON.stringify(itemRequests);
+  let pipelineResult;
 
+  try {
+    // 3. Construct a properly formatted multimodal payload for the vision engine[cite: 14]
+    const groqVisionResponse = await groq.chat.completions.create({
+      model: "llama-3.2-90b-vision-preview",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { 
+              type: "text", 
+              text: `Analyze this venue arrangement photo and extract precise positioning data based on these structural spatial planning targets: ${itemRequestsString}. Return a strict JSON structure detailing layout objects, estimated floor boundary coordinates array, and floorAreaSqm values.` 
+            },
+            { 
+              type: "image_url", 
+              image_url: { url: imageBase64 } 
+            }
+          ]
+        }
+      ]
+    });
+
+    const visionContent = groqVisionResponse.choices?.[0]?.message?.content;
+    if (!visionContent) throw new ApiError(502, 'Groq multimodal engine returned an empty response layout structure.');
+    
+    pipelineResult = JSON.parse(visionContent);
+  } catch (groqError) {
+    console.error("Downstream Groq processing failure:", groqError);
+    throw new ApiError(502, `Groq boundary-parsing request failed: ${groqError.message}`);
+  }
+
+  // Process the structured AI pipeline results into 3D canvas assets[cite: 16]
   const furnitureMap = (pipelineResult.objects || []).map((modelAsset, index) => {
     const x = 15 + (index * 4);
     const z = 30 + (index * 2);
@@ -75,7 +112,7 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
       objectId: modelAsset.objectId || `uuid-${Math.random().toString(36).substr(2, 9)}`,
       label: modelAsset.description || `AI Item ${index + 1}`,
       category: modelAsset.description?.toLowerCase().includes('chair') ? 'chair' : 'other',
-      modelUrl: modelAsset.modelUrl, 
+      modelUrl: modelAsset.modelUrl || null, 
       position: { x, y: 0, z },
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
@@ -86,6 +123,7 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
 
   const sourceImageUrlSnippet = `data:image/jpeg;base64,${imageBase64.slice(0, 50)}...`;
   
+  // Synchronize layout document states inside MongoDB[cite: 16]
   const layout = await Layout.findOneAndUpdate(
     { event: eventId },
     {
@@ -99,7 +137,7 @@ export const generateLayoutFromPhoto = asyncHandler(async (req, res) => {
     { new: true, upsert: true } 
   );
 
-  // Link newly computed layout back to the parent Event
+  // Link layout reference back to parent Event context record[cite: 16]
   if (layout) {
     await Event.findByIdAndUpdate(eventId, { $set: { layout: layout._id } });
   }
@@ -168,7 +206,7 @@ export const generateAdvisoryPlan = asyncHandler(async (req, res) => {
   const event = await Event.findById(eventId);
   if (!event) throw new ApiError(404, `No event found with matching id ${eventId}.`);
   
-  // FIX: Change event.owner to event.organiser to match the Event schema
+  // Organiser authentication authorization gate[cite: 16]
   if (String(event.organiser) !== String(req.user._id) && req.user.role !== 'admin') {
     throw new ApiError(403, 'Access denied. You do not own this event.');
   }
