@@ -3,7 +3,7 @@
  * @file frontend/app/lib/authClient.js
  * @description Authentication management client for Eventvista.
  * Coordinates real-time Firebase Identity Provider workflows with state persistence 
- * pipelines across the central MongoDB application data architecture.
+ * pipelines across the central MongoDB application data architecture.[cite: 17]
  */
 
 import {
@@ -21,25 +21,25 @@ const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope("profile");
 googleProvider.addScope("email");
 
-// System microservice base route configuration
+// System microservice base route configuration[cite: 17]
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
 // =========================================================================
-// SECTION 1: COMPREHENSIVE LOCAL CACHE PERSISTENCE ENGINE
+// SECTION 1: COMPREHENSIVE LOCAL CACHE PERSISTENCE ENGINE[cite: 17]
 // =========================================================================
 
 /**
- * Caches the raw Firebase token safely inside local space bounds.
- * @param {string} idToken - The decoded token string.
+ * Caches the raw Firebase token safely inside local space bounds.[cite: 17]
+ * @param {string} idToken - The decoded token string.[cite: 17]
  */
 function persistIdToken(idToken) {
   localStorage.setItem("firebase_id_token", idToken);
 }
 
 /**
- * Commits the verification token and application payload profiles to memory.
- * @param {string} appToken - The custom JWT assigned by the backend.
- * @param {object} user - The structural User schema metadata document from MongoDB.
+ * Commits the verification token and application payload profiles to memory.[cite: 17]
+ * @param {string} appToken - The custom JWT assigned by the backend.[cite: 17]
+ * @param {object} user - The structural User schema metadata document from MongoDB.[cite: 17]
  */
 function persistAppSession(appToken, user) {
   localStorage.setItem("token", appToken);
@@ -48,12 +48,17 @@ function persistAppSession(appToken, user) {
 }
 
 // =========================================================================
-// SECTION 2: IDENTITY SIGN IN AND REGISTRATION PATHWAYS
+// SECTION 2: IDENTITY SIGN IN AND REGISTRATION PATHWAYS[cite: 17]
 // =========================================================================
 
 /**
+<<<<<<< HEAD
+ * Spawns the authentic Google Provider popup view, captures identity metrics,
+ * and passes verification tokens downstream to determine signup state logic.[cite: 17]
+=======
  * Validates a Firebase ID token against the centralized Eventvista authentication endpoint.
  * Handles parsing fallbacks gracefully in the event of upstream network failures.
+>>>>>>> feature/central-hub-routing
  * 
  * @param {string} idToken - The raw decoded Firebase Identity Token.
  * @returns {Promise<{ isNewUser: boolean, idToken: string, email: string, firebaseUid?: string, appToken?: string, user?: object }>}
@@ -106,6 +111,42 @@ export async function signInWithGoogle() {
   let userCredential;
 
   try {
+    // Open the authentic modal overlay channel for user credentials[cite: 17]
+    const result = await signInWithPopup(auth, googleProvider);
+    const idToken = await result.user.getIdToken();
+
+    // Verify token validity directly against the central server security framework[cite: 17]
+    const res = await fetch("/api/v1/auth/session-verify", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    
+    // Safeguard Layer: Validate status directly before executing standard JSON body reads
+    if (!res.ok) {
+      throw new Error(`Server returned a critical transaction fault: ${res.status}`);
+    }
+    
+    const body = await res.json();
+    if (!body.success) {
+      throw new Error(body.message || "Could not verify authentic session with the server.[cite: 17]");
+    }
+
+    // Always cache the raw identity string for deep AI Advisor/Onboarding guard protection[cite: 17]
+    persistIdToken(idToken);
+
+    // Dynamic routing condition split tracking based on user registration index[cite: 17]
+    if (body.isNewUser) {
+      return { 
+        isNewUser: true, 
+        idToken, 
+        email: body.email, 
+        firebaseUid: body.firebaseUid 
+      };
+    }
+
+    // Fully hydrated profile found: persist session and pass metrics onward[cite: 17]
+    persistAppSession(body.token, body.data);
+    return { isNewUser: false, idToken, appToken: body.token, user: body.data };
     // 1. CRITICAL: Invoke popup synchronously at the top of the stack.
     // This satisfies strict browser security rules to prevent "auth/popup-blocked" errors.
     userCredential = await signInWithPopup(auth, googleProvider);
@@ -154,17 +195,17 @@ export async function handleRedirectCallback() {
 
 /**
  * Explicitly structures an absolute User creation matrix object inside MongoDB 
- * post-onboarding layout form choices for brand new system signups.
+ * post-onboarding layout form choices for brand new system signups.[cite: 17]
  * 
  * @param {object} params
- * @param {string} params.idToken - Fresh authorization validation string.
- * @param {string} params.name - User profile identity descriptor.
- * @param {string} params.role - Account privileges setting flag.
- * @param {string} params.businessName - Corporate asset structure string placeholder.
- * @returns {Promise<object>} The fully established MongoDB user record data map.
+ * @param {string} params.idToken - Fresh authorization validation string.[cite: 17]
+ * @param {string} params.name - User profile identity descriptor.[cite: 17]
+ * @param {string} params.role - Account privileges setting flag.[cite: 17]
+ * @param {string} params.businessName - Corporate asset structure string placeholder.[cite: 17]
+ * @returns {Promise<object>} The fully established MongoDB user record data map.[cite: 17]
  */
 export async function completeProfile({ idToken, name, role, businessName }) {
-  const res = await fetch(`${API_BASE}/users/complete-profile`, {
+  const res = await fetch("/api/v1/users/complete-profile", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -173,9 +214,14 @@ export async function completeProfile({ idToken, name, role, businessName }) {
     body: JSON.stringify({ name, role, businessName }),
   });
   
+  // Safeguard Layer: Intercept 404, 500, or raw textual errors early
+  if (!res.ok) {
+    throw new Error(`Server profile initialization failed: ${res.status}`);
+  }
+  
   const body = await res.json();
-  if (!res.ok || !body.success) {
-    throw new Error(body.message || "Could not complete your profile registration details.");
+  if (!body.success) {
+    throw new Error(body.message || "Could not complete your profile registration details.[cite: 17]");
   }
   
   persistAppSession(body.token, body.data);
@@ -183,15 +229,15 @@ export async function completeProfile({ idToken, name, role, businessName }) {
 }
 
 // =========================================================================
-// SECTION 3: SUBSCRIPTION LIFECYCLE LISTENERS AND SESSION DEPRECATION
+// SECTION 3: SUBSCRIPTION LIFECYCLE LISTENERS AND SESSION DEPRECATION[cite: 17]
 // =========================================================================
 
 /**
- * Explicitly captures core Firebase signature rotations to keep authorization strings fresh.
- * Essential for persistent client views making long asynchronous network requests.
+ * Explicitly captures core Firebase signature rotations to keep authorization strings fresh.[cite: 17]
+ * Essential for persistent client views making long asynchronous network requests.[cite: 17]
  * 
- * @param {Function} callback - Callback executable receiving the updated token.
- * @returns {import("firebase/auth").Unsubscribe} Lifecycle termination cleanup engine.
+ * @param {Function} callback - Callback executable receiving the updated token.[cite: 17]
+ * @returns {import("firebase/auth").Unsubscribe} Lifecycle termination cleanup engine.[cite: 17]
  */
 export function watchIdToken(callback) {
   return onIdTokenChanged(auth, async (user) => {
@@ -203,7 +249,7 @@ export function watchIdToken(callback) {
 }
 
 /**
- * Invalidates system contexts, triggers explicit client sign out, and clears local variables.
+ * Invalidates system contexts, triggers explicit client sign out, and clears local variables.[cite: 17]
  */
 export async function signOutUser() {
   await signOut(auth);
