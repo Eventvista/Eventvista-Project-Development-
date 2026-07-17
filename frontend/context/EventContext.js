@@ -1,9 +1,8 @@
-// frontend/context/EventContext.js
 /**
  * @file frontend/context/EventContext.js
  * @description Centralized state management for tracking active event scopes.
- * Orchestrates bidirectional synchronization between the browser's local storage,
- * dynamic URL query boundaries, and React 19 application space.
+ * Orchestrates bidirectional synchronization between backend REST pipelines, browser local storage,
+ * dynamic URL query boundaries, and the React application space.
  */
 
 "use client";
@@ -22,34 +21,81 @@ function EventContextLogic({ children }) {
     const router = useRouter();
     const pathname = usePathname();
 
-    // Initialize state from URL query parameters to allow persistent sharing links[cite: 18]
+    // Initialize state from URL query parameters to allow persistent sharing links
     const urlEventId = searchParams.get("eventId");
     const [activeEventId, setActiveEventId] = useState(urlEventId || "");
+    const [events, setEvents] = useState([]);
 
-    // Sync state to URL parameters and cache locally whenever user changes active focus[cite: 18]
+    // =========================================================================
+    // PIPELINE HYDRATION (Method 1 Data Sync & LocalStorage Fallback)
+    // =========================================================================
     useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+                const res = await fetch("/api/v1/events", {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setEvents(data.data);
+                }
+            } catch (err) {
+                console.error("Event context synchronization failed:", err);
+            }
+        };
+        
+        fetchEvents();
+
+        // Rehydrate active event from persistent local cache only if URL query parameter is missing
+        if (!urlEventId) {
+            const storedId = localStorage.getItem("activeEventId");
+            if (storedId) {
+                setActiveEventId(storedId);
+            }
+        }
+    }, [urlEventId]);
+
+    // =========================================================================
+    // STATE TO ROUTER SYNCHRONIZATION (Method 2 Multi-surface Push)
+    // =========================================================================
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams.toString());
+
         if (activeEventId) {
-            // Keep localStorage as a backup client cache for page layout initialization[cite: 18]
+            // Keep localStorage as a backup client cache for page layout initialization
             localStorage.setItem("activeEventId", activeEventId);
 
-            // Dynamically replace the current URL search parameters if mismatched[cite: 18]
+            // Dynamically replace the current URL search parameters if mismatched
             if (urlEventId !== activeEventId) {
-                const params = new URLSearchParams(searchParams.toString());
                 params.set("eventId", activeEventId);
+                router.replace(`${pathname}?${params.toString()}`);
+            }
+        } else {
+            // Clear both historical cache tracks when active scope is unassigned
+            localStorage.removeItem("activeEventId");
+            if (params.has("eventId")) {
+                params.delete("eventId");
                 router.replace(`${pathname}?${params.toString()}`);
             }
         }
     }, [activeEventId, pathname, router, searchParams, urlEventId]);
 
-    // Track direct parameter input adjustments (such as pasting a link with a query token)[cite: 18]
+    // Track direct parameter input adjustments (such as pasting a link with a query token)
     useEffect(() => {
         if (urlEventId && urlEventId !== activeEventId) {
             setActiveEventId(urlEventId);
         }
     }, [urlEventId, activeEventId]);
 
+    // Backward-compatible explicit mutation abstraction wrapper
+    const updateActiveEvent = (id) => {
+        setActiveEventId(id || "");
+    };
+
     return (
-        <EventContext.Provider value={{ activeEventId, setActiveEventId }}>
+        <EventContext.Provider value={{ activeEventId, setActiveEventId, updateActiveEvent, events }}>
             {children}
         </EventContext.Provider>
     );
@@ -57,7 +103,7 @@ function EventContextLogic({ children }) {
 
 /**
  * Primary React Context Provider Wrapper.
- * Embeds a Suspense wrapper around query operations to prevent Next.js SSG build compilation warnings[cite: 18].
+ * Embeds a Suspense wrapper around query operations to prevent Next.js SSG build compilation warnings.
  */
 export function EventContextProvider({ children }) {
     return (
@@ -71,7 +117,12 @@ export function EventContextProvider({ children }) {
  * Safe, validated custom hook to consume the current active event context scope.
  * 
  * @throws {Error} If consumed outside of the `<EventContextProvider>` layout boundary.
- * @returns {{ activeEventId: string, setActiveEventId: React.Dispatch<React.SetStateAction<string>> }}
+ * @returns {{ 
+ *   activeEventId: string, 
+ *   setActiveEventId: React.Dispatch<React.SetStateAction<string>>,
+ *   updateActiveEvent: (id: string) => void,
+ *   events: Array<object>
+ * }}
  */
 export function useEventContext() {
     const context = useContext(EventContext);
